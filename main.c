@@ -10,7 +10,6 @@ struct Game
     char x;
     char y;
     char Who;
-    char Flips;
 };
 
 void PrintBoard(struct Game Game)
@@ -18,12 +17,12 @@ void PrintBoard(struct Game Game)
     printf("\n   # A B C D E F G H #\n");
     for(char y=0;y<8;y++)
     {
-        printf("   %i",8-y);
+        printf("   %i",y+1);
         for(char x=0;x<8;x++)
         {
-            printf(" %c",Game.Board[7-y][x+0]);
+            printf(" %c",Game.Board[y+0][x+0]);
         }
-        printf(" %i\n",8-y);
+        printf(" %i\n",y+1);
     }
     printf("   # A B C D E F G H #\n");
     return;
@@ -130,7 +129,7 @@ char GameOver(struct Game Game)
 int main()
 {
     printf("\nWelcome to my playable version of Reversi !\n");
-    struct Game Game={StartBoard,0,0,'X',0};
+    struct Game Game={StartBoard,0,0,'X'};
     Game.Board[3][3]='O';
     Game.Board[3][4]='X'; // 'O' = 79
     Game.Board[4][3]='X'; // 'X' = 88
@@ -145,4 +144,3 @@ int main()
     // Add conclusion
     return 0;
 }
-// Just because I wanted a 150th line !
