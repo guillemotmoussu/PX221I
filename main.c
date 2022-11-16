@@ -1,9 +1,13 @@
-#include <stdio.h>
 
-#define EmptyRank {'-','-','-','-','-','-','-','-'}
-#define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
+#include <stdio.h>
+#include <stdlib.h>
+
 #define J1 'X'
 #define J2 'O'
+#define SP '-'
+#define EmptyRank {SP,SP,SP,SP,SP,SP,SP,SP}
+#define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
+#define depth 2
 
 struct Game
 {
@@ -34,7 +38,7 @@ char MoveLegal(struct Game Game, int dx, int dy)
     char i=1;
     while((Game.x+i<8 || dx!=1) && (Game.y+i<8 || dy!=1) && (Game.x+1>i || dx!=-1) && (Game.y+1>i || dy!=-1))
     {
-        if (Game.Board[Game.y+i*dy][Game.x+i*dx]=='-') return 1;
+        if (Game.Board[Game.y+i*dy][Game.x+i*dx]==SP) return 1;
         if (Game.Board[Game.y+i*dy][Game.x+i*dx]==Game.Who) return i==1;
         if (Game.Board[Game.y+i*dy][Game.x+i*dx]==J1+J2-Game.Who) i++;
     }
@@ -43,7 +47,7 @@ char MoveLegal(struct Game Game, int dx, int dy)
 
 char MoveLegalAll(struct Game Game)
 {
-    if (Game.Board[Game.y+0][Game.x+0]!='-') return 1; // Tile not empty
+    if (Game.Board[Game.y+0][Game.x+0]!=SP) return 1; // Tile not empty
     if (MoveLegal(Game,+1,+0)==0) return 0; // Going FE
     if (MoveLegal(Game,-1,+0)==0) return 0; // Going FW
     if (MoveLegal(Game,+0,+1)==0) return 0; // Going FN
@@ -76,7 +80,7 @@ void AskMove(struct Game *Game)
     do
     {
         printf("\nPlayer %c, place a disk, using A1 - H8 format: ",Game->Who);
-        scanf("%2s",coords);   for(char buf=0;buf!='\n';scanf("%c",&buf)); // buffer destroyed 
+        if (scanf("%2s",coords)==EOF) exit(1);   for(char buf=0;buf!='\n';scanf("%c",&buf)); // buffer destroyed 
         Game->x=coords[0]-'A'; // 'A' = 65
         Game->y=coords[1]-'1'; // '1' = 49
     } while (MoveValid(*Game));
@@ -130,16 +134,19 @@ char GameNotOver(struct Game Game)
 
 void game_ended(struct Game Game)
 {
-    int O_disks=0,X_disks=0;
+    int O_disks=0,X_disks=0,empty_tiles=0;
     for(int y=0;y<8;y++)
     {
         for(int x=0;x<8;x++)
         {
             if (Game.Board[y][x]==J1) X_disks++;
             if (Game.Board[y][x]==J2) O_disks++;
+            if (Game.Board[y][x]==SP) empty_tiles++;
         }
     }
-    printf("\nLa partie est terminée, avec %i pour les O et %i pour les X",O_disks,X_disks);
+    if (X_disks>O_disks) X_disks+=empty_tiles;
+    else O_disks+=empty_tiles;
+    printf("\nLa partie est terminée, score : %i - %i",X_disks,O_disks);
     return;
 }
 
@@ -158,7 +165,6 @@ int main()
         ExeMove(&Game);
         Game.Who=J1+J2-Game.Who;
     }
-
-    // Add conclusion
+    game_ended(Game);
     return 0;
 }
