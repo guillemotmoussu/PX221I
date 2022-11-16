@@ -104,12 +104,12 @@ void ExeMove(struct Game *Game)
     Game->Board[Game->y+0][Game->x+0]=Game->Who; // Placing disk
     if (MoveLegal(*Game,-1,+0)==0) FlipMove(Game,-1,+0); // Going FW
     if (MoveLegal(*Game,+1,+0)==0) FlipMove(Game,+1,+0); // Going FE
-    if (MoveLegal(*Game,+0,+1)==0) FlipMove(Game,+0,+1); // Going FN
-    if (MoveLegal(*Game,+0,-1)==0) FlipMove(Game,+0,-1); // Going FS
-    if (MoveLegal(*Game,+1,+1)==0) FlipMove(Game,+1,+1); // Going NE
-    if (MoveLegal(*Game,-1,-1)==0) FlipMove(Game,-1,-1); // Going SW
-    if (MoveLegal(*Game,-1,+1)==0) FlipMove(Game,-1,+1); // Going NW
-    if (MoveLegal(*Game,+1,-1)==0) FlipMove(Game,+1,-1); // Going SE
+    if (MoveLegal(*Game,+0,+1)==0) FlipMove(Game,+0,+1); // Going FS
+    if (MoveLegal(*Game,+0,-1)==0) FlipMove(Game,+0,-1); // Going FN
+    if (MoveLegal(*Game,+1,+1)==0) FlipMove(Game,+1,+1); // Going SE
+    if (MoveLegal(*Game,-1,-1)==0) FlipMove(Game,-1,-1); // Going NW
+    if (MoveLegal(*Game,-1,+1)==0) FlipMove(Game,-1,+1); // Going SW
+    if (MoveLegal(*Game,+1,-1)==0) FlipMove(Game,+1,-1); // Going NE
     return;
 }
 
