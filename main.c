@@ -9,6 +9,8 @@
 #define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
 #define depth 2
 
+//Ceci est un TEST pour GytHub
+
 struct Game
 {
     char Board[8][8];
