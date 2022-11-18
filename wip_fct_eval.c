@@ -205,10 +205,23 @@ void fct_eval(struct Game Game)
     }
     current_game.Who=J1+J2-current_game.Who;
 
+    //force de la disposition
+    //tableau tiré de http://imagine.enpc.fr/~monasse/Info/Projets/2003/othello.pdf
+    int tableau_force_référence[8][8]={{500,-150,30,10,10,30,-150,500},{-150,-250,0,0,0,0,-250,-150},{30,0,1,2,2,1,0,30},{10,0,2,16,16,2,0,10},{10,0,2,16,16,2,0,10},{30,0,1,2,2,1,0,30},{-150,-250,0,0,0,0,-250,-150},{500,-150,30,10,10,30,-150,500}};
+    int valeur_de_force=0;
+    for(int y=0;y<8;y++)
+    {
+        for(int x=0;x<8;x++)
+        {
+            if (current_game.Board[y][x]==current_game.Who) valeur_de_force+=tableau_force_référence[y][x];
+        }
+    }
+
     printf("Coups possibles : %d\n",coups_possibles);
     printf("Coups possibles adv : %d\n",coups_possibles_adversaire);
     printf("Nb pions : %d\n",nb_pions);
     printf("Coins capturés : %d\n",corners);
+    printf("Force : %d\n",valeur_de_force);
     return;
 }
 
@@ -268,7 +281,7 @@ void ia_primitive(struct Game *Game)
     printf("Coup choisi : %s\n",coups_possibles_2[nbr_aleat]);
     Game->x=coups_possibles_3[nbr_aleat][0];
     Game->y=coups_possibles_3[nbr_aleat][1];
-    //sleep(1);
+    sleep(1);
     return;
 }
 
