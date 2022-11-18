@@ -162,65 +162,66 @@ void game_ended(struct Game Game)
 
 void fct_eval(struct Game Game)
 {
-    printf("\n-----FCT EVALUATION-----\n");
     struct Game current_game=Game;
-    int coups_possibles=0;
-    int coups_possibles_adversaire=0;
-    int nb_pions=0;
-
-    //nb de coins
-    int corners=(current_game.Board[0][0]==current_game.Who)+(current_game.Board[0][7]==current_game.Who)+(current_game.Board[7][0]==current_game.Who)+(current_game.Board[7][7]==current_game.Who);
-
-    //comptage pions
-    for(int y=0;y<8;y++)
-    {
-        for(int x=0;x<8;x++)
-        {
-            if (current_game.Board[y][x]==current_game.Who) nb_pions++;
-        }
-    }
-
-    //coups possibles
-    for(int j=0;j<8;j++)
-    {
-        for(int i=0;i<8;i++)
-        {
-            current_game.x=i;
-            current_game.y=j;
-            if (MoveLegalAll(current_game)==0) coups_possibles++;
-        }
-    }
-
-    //coups possibles adversaire
-    current_game.Who=J1+J2-current_game.Who;
-    for(int j=0;j<8;j++)
-    {
-        for(int i=0;i<8;i++)
-        {
-            current_game.x=i;
-            current_game.y=j;
-            if (MoveLegalAll(current_game)==0) coups_possibles_adversaire++;
-        }
-    }
-    current_game.Who=J1+J2-current_game.Who;
-
-    //force de la disposition
-    //tableau tiré de http://imagine.enpc.fr/~monasse/Info/Projets/2003/othello.pdf
     int tableau_force_référence[8][8]={{500,-150,30,10,10,30,-150,500},{-150,-250,0,0,0,0,-250,-150},{30,0,1,2,2,1,0,30},{10,0,2,16,16,2,0,10},{10,0,2,16,16,2,0,10},{30,0,1,2,2,1,0,30},{-150,-250,0,0,0,0,-250,-150},{500,-150,30,10,10,30,-150,500}};
-    int valeur_de_force=0;
-    for(int y=0;y<8;y++)
+
+    //---évaluation joueur actuel---
+    int coups_possibles_actuel=0;
+    int nb_pions_actuel=0;
+    int valeur_de_force_actuel=0;
+    //coins
+    int corners_actuel=(current_game.Board[0][0]==current_game.Who)+(current_game.Board[0][7]==current_game.Who)+(current_game.Board[7][0]==current_game.Who)+(current_game.Board[7][7]==current_game.Who);
+    for(int j=0;j<8;j++)
     {
-        for(int x=0;x<8;x++)
+        for(int i=0;i<8;i++)
         {
-            if (current_game.Board[y][x]==current_game.Who) valeur_de_force+=tableau_force_référence[y][x];
+            //nombre de pions
+            if (current_game.Board[j][i]==current_game.Who) nb_pions_actuel++;
+            //coups possibles
+            current_game.x=i;
+            current_game.y=j;
+            if (MoveLegalAll(current_game)==0) coups_possibles_actuel++;
+            //valeur de force
+            if (current_game.Board[j][i]==current_game.Who) valeur_de_force_actuel+=tableau_force_référence[j][i];
         }
     }
 
-    printf("Coups possibles : %d\n",coups_possibles);
-    printf("Coups possibles adv : %d\n",coups_possibles_adversaire);
-    printf("Nb pions : %d\n",nb_pions);
-    printf("Coins capturés : %d\n",corners);
-    printf("Force : %d\n",valeur_de_force);
+    //---évaluation joueur adverse---
+    current_game.Who=J1+J2-current_game.Who;
+    int coups_possibles_adverse=0;
+    int nb_pions_adverse=0;
+    int valeur_de_force_adverse=0;
+    //coins
+    int corners_adverse=(current_game.Board[0][0]==current_game.Who)+(current_game.Board[0][7]==current_game.Who)+(current_game.Board[7][0]==current_game.Who)+(current_game.Board[7][7]==current_game.Who);
+    for(int j=0;j<8;j++)
+    {
+        for(int i=0;i<8;i++)
+        {
+            //nombre de pions
+            if (current_game.Board[j][i]==current_game.Who) nb_pions_adverse++;
+            //coups possibles
+            current_game.x=i;
+            current_game.y=j;
+            if (MoveLegalAll(current_game)==0) coups_possibles_adverse++;
+            //valeur de force
+            if (current_game.Board[j][i]==current_game.Who) valeur_de_force_adverse+=tableau_force_référence[j][i];
+        }
+    }
+    current_game.Who=J1+J2-current_game.Who;
+
+    //affichage
+    printf("\n-----FCT EVALUATION-----\n");
+    printf("Joueur actuel :\n");
+    printf("Mobilité : %d\n",coups_possibles_actuel);
+    printf("Nb pions : %d\n",nb_pions_actuel);
+    printf("Coins capturés : %d\n",corners_actuel);
+    printf("Force : %d\n",valeur_de_force_actuel);
+    printf("\nJoueur adverse :\n");
+    printf("Mobilité : %d\n",coups_possibles_adverse);
+    printf("Nb pions : %d\n",nb_pions_adverse);
+    printf("Coins capturés : %d\n",corners_adverse);
+    printf("Force : %d\n",valeur_de_force_adverse);
+
     return;
 }
 
@@ -280,7 +281,7 @@ void ia_primitive(struct Game *Game)
     printf("Coup choisi : %s\n",coups_possibles_2[nbr_aleat]);
     Game->x=coups_possibles_3[nbr_aleat][0];
     Game->y=coups_possibles_3[nbr_aleat][1];
-    sleep(1);
+    sleep(10);
     return;
 }
 
