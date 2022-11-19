@@ -17,6 +17,7 @@ struct Game
     char x;
     char y;
     char Who;
+    int tour;
 };
 
 void PrintBoard(struct Game Game)
@@ -223,6 +224,14 @@ void fct_eval(struct Game Game)
     if (valeur_de_force_actuel + valeur_de_force_adverse != 0) score_force = 100*(valeur_de_force_actuel - valeur_de_force_adverse)/(valeur_de_force_actuel + valeur_de_force_adverse);
     else score_force = 0;
 
+    //---calcul pondéré
+    //début de partie, 12 premiers tous
+    if (Game.tour<12) evaluation_plateau=0.8*score_mobilité+0.2*score_force;
+    //milieu de partie
+    if (Game.tour>=12 && Game.tour<60-depth) evaluation_plateau=0.4*score_mobilité+0.4*score_force+0.2*score_coins;
+    //fin de partie
+    if (Game.tour>=60-depth) evaluation_plateau=0.1*score_coins+0.1*score_force+0.1*score_mobilité+0.7*score_pions;
+
     //affichage
     printf("\n-----FCT EVALUATION-----\n");
     printf("Joueur actuel :\n");
@@ -240,6 +249,7 @@ void fct_eval(struct Game Game)
     printf("Pions : %d\n",score_pions);
     printf("Coins : %d\n",score_coins);
     printf("Force : %d\n",score_force);
+    printf("\nTotal pondéré: %d\n",evaluation_plateau);
 
     return;
 }
@@ -300,14 +310,14 @@ void ia_primitive(struct Game *Game)
     printf("Coup choisi : %s\n",coups_possibles_2[nbr_aleat]);
     Game->x=coups_possibles_3[nbr_aleat][0];
     Game->y=coups_possibles_3[nbr_aleat][1];
-    sleep(10);
+    sleep(3);
     return;
 }
 
 int main()
 {
     printf("\nWelcome to our playable version of Reversi !\n");
-    struct Game Game={StartBoard,0,0,J1};
+    struct Game Game={StartBoard,0,0,J1,0};
     Game.Board[3][3]=J2;
     Game.Board[3][4]=J1;
     Game.Board[4][3]=J1;
@@ -320,6 +330,7 @@ int main()
         ia_primitive(&Game);
         ExeMove(&Game);
         Game.Who=J1+J2-Game.Who;
+        Game.tour++;
     }
     PrintBoard(Game);
     game_ended(Game);
