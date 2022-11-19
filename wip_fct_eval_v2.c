@@ -209,6 +209,20 @@ void fct_eval(struct Game Game)
     }
     current_game.Who=J1+J2-current_game.Who;
 
+    //--calcul de la fonction---
+    int score_pions, score_mobilité, score_coins, score_force,evaluation_plateau;
+    //score pions
+    score_pions=100*(nb_pions_actuel-nb_pions_adverse)/(nb_pions_actuel+nb_pions_adverse);
+    //score mobilité
+    if (coups_possibles_actuel + coups_possibles_adverse != 0) score_mobilité = 100*(coups_possibles_actuel - coups_possibles_adverse)/(coups_possibles_actuel + coups_possibles_adverse);
+    else score_mobilité = 0;
+    //score coins
+    if (corners_actuel + corners_adverse != 0) score_coins = 100*(corners_actuel - corners_adverse)/(corners_actuel + corners_adverse);
+    else score_coins = 0;
+    //score force
+    if (valeur_de_force_actuel + valeur_de_force_adverse != 0) score_force = 100*(valeur_de_force_actuel - valeur_de_force_adverse)/(valeur_de_force_actuel + valeur_de_force_adverse);
+    else score_force = 0;
+
     //affichage
     printf("\n-----FCT EVALUATION-----\n");
     printf("Joueur actuel :\n");
@@ -221,6 +235,11 @@ void fct_eval(struct Game Game)
     printf("Nb pions : %d\n",nb_pions_adverse);
     printf("Coins capturés : %d\n",corners_adverse);
     printf("Force : %d\n",valeur_de_force_adverse);
+    printf("\nCalcul fonction :\n");
+    printf("Mobilité : %d\n",score_mobilité);
+    printf("Pions : %d\n",score_pions);
+    printf("Coins : %d\n",score_coins);
+    printf("Force : %d\n",score_force);
 
     return;
 }
