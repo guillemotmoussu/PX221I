@@ -1,15 +1,17 @@
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <unistd.h>
 
 #define P1 'X'
 #define P2 'O'
 #define TI '-'
-#define ExistP1 'N'
+#define ExistP1 'P'
 #define ExistP2 'N'
 #define EmptyRank {TI,TI,TI,TI,TI,TI,TI,TI}
 #define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
-#define MaxDepth 3
+#define MaxDepth 5
 #define Infinity 120
 #define EvalWin 110
 
@@ -291,6 +293,66 @@ void BotMove(struct Game *Game)
     return;
 }
 
+void ia_primitive(struct Game *Game)
+{
+    printf("\n-----IA PRIMITIVE-----\n");
+    printf("Joueur : %c\n",Game->Who);
+    struct Game current_game=*Game;
+    int nb_coups_possibles=0;
+    char tab_lettres[]={'A','B','C','D','E','F','G','H'};
+    char tab_chiffres[]={'1','2','3','4','5','6','7','8'};
+    //on détermine le nombre de coups possibles
+    for(int j=0;j<8;j++)
+    {
+        for(int i=0;i<8;i++)
+        {
+            current_game.x=i;
+            current_game.y=j;
+            if (MoveLegalAll(current_game)==0) nb_coups_possibles++;
+        }
+    }
+    //on enregistre les coups possible
+    char coups_possibles[nb_coups_possibles][3];
+    char coups_possibles_3[nb_coups_possibles][3];
+    int index=0;
+    for(int j=0;j<8;j++)
+    {
+        for(int i=0;i<8;i++)
+        {
+            current_game.x=i;
+            current_game.y=j;
+            if (MoveLegalAll(current_game)==0)
+            {
+                coups_possibles[index][0]=tab_lettres[i];
+                coups_possibles[index][1]=tab_chiffres[j];
+                coups_possibles_3[index][0]=i;
+                coups_possibles_3[index][1]=j;
+                //printf("%c %c\n",tab_lettres[i],tab_chiffres[j]);
+                index++;
+            }
+        }
+    }
+    //on range tout ça dans un tableau
+    char coups_possibles_2[nb_coups_possibles][3];
+    printf("Coups possibles : ");
+    for(int j=0;j<nb_coups_possibles;j++)
+    {
+
+        memcpy(coups_possibles_2[j], coups_possibles[j], 2);
+        coups_possibles_2[j][2] = '\0'; 
+        printf("%s ",coups_possibles_2[j]);
+    }
+    printf("\n");
+    //on en choisit un au hasard
+    srand(time(NULL));
+    int nbr_aleat = rand()%nb_coups_possibles;
+    printf("Coup choisi : %s\n",coups_possibles_2[nbr_aleat]);
+    Game->x=coups_possibles_3[nbr_aleat][0];
+    Game->y=coups_possibles_3[nbr_aleat][1];
+    //sleep(1);
+    return;
+}
+
 int main()
 {
     printf("\nWelcome to my playable version of Reversi !\n");
@@ -305,6 +367,11 @@ int main()
         if ((Game.Who==P1 && ExistP1=='Y')||(Game.Who==P2 && ExistP2=='Y'))
         {
             AskMove(&Game);
+            ExeMove(&Game);
+        }
+        else if ((Game.Who==P1 && ExistP1=='P')||(Game.Who==P2 && ExistP2=='Y'))
+        {
+            ia_primitive(&Game);
             ExeMove(&Game);
         }
         else BotMove(&Game);
