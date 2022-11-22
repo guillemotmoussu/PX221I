@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include <assert.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #define P1 'X'
 #define P2 'O'
@@ -11,7 +12,7 @@
 #define ExistP2 'N'
 #define EmptyRank {TI,TI,TI,TI,TI,TI,TI,TI}
 #define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
-#define MaxDepth 5
+#define MaxDepth 4
 #define Infinity 120
 #define EvalWin 110
 
@@ -21,6 +22,7 @@ struct Game
     char x;
     char y;
     char Who;
+    int tour;
 };
 
 void PrintBoard(struct Game Game)
@@ -199,16 +201,91 @@ void BoardCopy(char BoardS[8][8], char BoardD[8][8])
 
 char BotEval(struct Game Game)
 {
-    char eval=0;
-    for(char y=0;y<8;y++)
+    int tableau_force_référence[8][8]=
+    {{500,-150,30,10,10,30,-150,500},
+    {-150,-250,0,0,0,0,-250,-150},
+    {30,0,1,2,2,1,0,30},
+    {10,0,2,15,15,2,0,10},
+    {10,0,2,15,15,2,0,10},
+    {30,0,1,2,2,1,0,30},
+    {-150,-250,0,0,0,0,-250,-150},
+    {500,-150,30,10,10,30,-150,500}};
+
+    int coups_possibles_actuel=0;
+    int nb_pions_actuel=0;
+    int valeur_de_force_actuel=0;
+    int coups_possibles_adverse=0;
+    int nb_pions_adverse=0;
+    int valeur_de_force_adverse=0;
+
+    //coins
+    int coins_actuel=((Game.Board[0][0]==Game.Who)*20)+((Game.Board[0][7]==Game.Who)*20)+((Game.Board[7][0]==Game.Who)*20)+((Game.Board[7][7]==Game.Who)*20);
+    Game.Who=P1+P2-Game.Who;
+    int coins_adverse=((Game.Board[0][0]==Game.Who)*20)+((Game.Board[0][7]==Game.Who)*20)+((Game.Board[7][0]==Game.Who)*20)+((Game.Board[7][7]==Game.Who)*20);
+    Game.Who=P1+P2-Game.Who;
+    
+    for(int j=0;j<8;j++)
     {
-        for(char x=0;x<8;x++)
+        for(int i=0;i<8;i++)
         {
-            if(Game.Board[y+0][x+0]==Game.Who) eval++;
-            if(Game.Board[y+0][x+0]==P1+P2-Game.Who) eval--;
+            //---évaluation joueur actuel---
+            //nombre de pions
+            if (Game.Board[j][i]==Game.Who) nb_pions_actuel++;
+            //mobilité
+            Game.x=i;
+            Game.y=j;
+            if (MoveLegalAll(Game)==0) coups_possibles_actuel++;
+            //valeur de force
+            if (Game.Board[j][i]==Game.Who) valeur_de_force_actuel+=tableau_force_référence[j][i];
+
+            //---évaluation joueur adverse---
+            Game.Who=P1+P2-Game.Who;
+            //nombre de pions
+            if (Game.Board[j][i]==Game.Who) nb_pions_adverse++;
+            //mobilité
+            Game.x=i;
+            Game.y=j;
+            if (MoveLegalAll(Game)==0) coups_possibles_adverse++;
+            //valeur de force
+            if (Game.Board[j][i]==Game.Who) valeur_de_force_adverse+=tableau_force_référence[j][i];
+            Game.Who=P1+P2-Game.Who;
         }
     }
-    return eval;
+
+    //--calcul de la fonction---
+    int score_pions, score_mobilité, score_coins, score_force,evaluation_plateau;
+    //score pions
+    score_pions=100*(nb_pions_actuel-nb_pions_adverse)/(nb_pions_actuel+nb_pions_adverse);
+    //score mobilité
+    if ((coups_possibles_actuel + coups_possibles_adverse)!=0)
+        {score_mobilité = 100*(coups_possibles_actuel - coups_possibles_adverse)/(coups_possibles_actuel + coups_possibles_adverse);}
+    else score_mobilité = 0;
+    //score coins
+    if (coins_actuel + coins_adverse != 0) 
+        {score_coins = 100*(coins_actuel - coins_adverse)/(coins_actuel + coins_adverse);}
+    else score_coins = 0;
+    //score force
+    score_force = (valeur_de_force_actuel - valeur_de_force_adverse)/46;
+
+    assert(score_pions<=100);
+    assert(score_pions>=-100);
+    assert(score_mobilité<=100);
+    assert(score_mobilité>=-100);
+    assert(score_coins<=100);
+    assert(score_coins>=-100);
+    assert(score_force<=100);
+    assert(score_force>=-100);
+
+    //---calcul pondéré---
+    //début de partie, 12 premiers tous
+    if (Game.tour<12) evaluation_plateau=0.8*score_mobilité+0.2*score_force;
+    //milieu de partie
+    if (Game.tour>=12 && Game.tour<60-MaxDepth) evaluation_plateau=0.4*score_mobilité+0.4*score_force+0.2*score_coins;
+    //fin de partie
+    if (Game.tour>=60-MaxDepth) evaluation_plateau=0.1*score_coins+0.1*score_force+0.1*score_mobilité+0.7*score_pions;
+
+    assert(evaluation_plateau>=-100 && evaluation_plateau<=100);
+    return evaluation_plateau;
 }
 
 char GrowTree(struct Game Game, char depth)
@@ -353,10 +430,11 @@ void ia_primitive(struct Game *Game)
     return;
 }
 
+
 int main()
 {
     printf("\nWelcome to my playable version of Reversi !\n");
-    struct Game Game={StartBoard,0,0,P1,};
+    struct Game Game={StartBoard,0,0,P1,0};
     Game.Board[3][3]=P2;
     Game.Board[3][4]=P1; // 'O' = 79
     Game.Board[4][3]=P1; // 'X' = 88
@@ -376,6 +454,7 @@ int main()
         }
         else BotMove(&Game);
         Game.Who=P1+P2-Game.Who; // 79+88=167
+        Game.tour++;
     }
     Score(Game);
     return 0;
