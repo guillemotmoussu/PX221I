@@ -10,7 +10,7 @@
 #define ExistP2 'N'
 #define EmptyRank {TI,TI,TI,TI,TI,TI,TI,TI}
 #define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
-#define MaxDepth 2
+#define MaxDepth 5
 #define Infinity 120
 #define EvalWin 110
 
@@ -255,7 +255,9 @@ char BotEval(struct Game Game)
     //score pions
     score_pions=100*(nb_pions_actuel-nb_pions_adverse)/(nb_pions_actuel+nb_pions_adverse);
     //score mobilité
-    score_mobilité = 100*(coups_possibles_actuel - coups_possibles_adverse)/(coups_possibles_actuel + coups_possibles_adverse);
+    if ((coups_possibles_actuel + coups_possibles_adverse)!=0)
+        {score_mobilité = 100*(coups_possibles_actuel - coups_possibles_adverse)/(coups_possibles_actuel + coups_possibles_adverse);}
+    else score_mobilité = 0;
     //score coins
     if (coins_actuel + coins_adverse != 0) 
         {score_coins = 100*(coins_actuel - coins_adverse)/(coins_actuel + coins_adverse);}
