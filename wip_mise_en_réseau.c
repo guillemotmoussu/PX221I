@@ -9,7 +9,7 @@
 #define P1 'X'
 #define P2 'O'
 #define TI '-'
-#define ExistP1 'P'
+#define ExistP1 'Y'
 #define ExistP2 'N'
 #define EmptyRank {TI,TI,TI,TI,TI,TI,TI,TI}
 #define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
@@ -445,6 +445,11 @@ void ia_primitive(struct Game *Game)
     return;
 }
 
+void ServerPlay()
+{
+    return;
+}
+
 int main()
 {
     printf("\nWelcome to our playable version of Reversi !\n");
@@ -465,6 +470,10 @@ int main()
         {
             ia_primitive(&Game);
             ExeMove(&Game);
+        }
+        else if ((Game.Who==P1 && ExistP1=='S')||(Game.Who==P2 && ExistP2=='S'))
+        {
+            ServerPlay();
         }
         else BotMove(&Game);
         Game.Who=P1+P2-Game.Who;
