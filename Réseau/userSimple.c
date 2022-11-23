@@ -11,7 +11,7 @@ int main(int argc,char *argv[])
 	game *g;
 	int move; 
 
-	g=allocateGameOthello(); 
+	if ((g=allocateGameOthello())==NULL) exit(3); 
 
 	if (argc > 3 ) { 
 		g->userId=atoi(argv[3]); 

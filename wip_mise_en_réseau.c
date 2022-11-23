@@ -450,7 +450,7 @@ void ServerPlay()
     return;
 }
 
-int main()
+int main(int argc,char *argv[]) 
 {
     printf("\nWelcome to our playable version of Reversi !\n");
     struct Game Game={StartBoard,0,0,P1,0};
