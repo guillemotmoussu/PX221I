@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include "userNetwork.h"
 
 #define P1 'X'
 #define P2 'O'
@@ -452,6 +453,12 @@ void ServerPlay()
 
 int main(int argc,char *argv[]) 
 {
+    ServerGame *g=NULL;
+    int ServerMove=0;
+    if ((g=allocateGameOthello())==NULL) exit(3);
+    if (argc > 3) {g->userId=atoi(argv[3]); g->address=argv[2];}
+    else {printf("usage : %s <userPasswd> <ip ad> <userId>\n",argv[0]);exit(2);}
+    //Old One
     printf("\nWelcome to our playable version of Reversi !\n");
     struct Game Game={StartBoard,0,0,P1,0};
     Game.Board[3][3]=P2;
