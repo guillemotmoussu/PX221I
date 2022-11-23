@@ -8,11 +8,11 @@
 #define P1 'X'
 #define P2 'O'
 #define TI '-'
-#define ExistP1 'N'
+#define ExistP1 'P'
 #define ExistP2 'N'
 #define EmptyRank {TI,TI,TI,TI,TI,TI,TI,TI}
 #define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
-#define MaxDepth 4
+#define MaxDepth 1
 #define Infinity 120
 #define EvalWin 110
 
@@ -460,7 +460,12 @@ int main()
             AskMove(&Game);
             ExeMove(&Game);
         }
-        else if ((Game.Who==P1 && ExistP1=='P')||(Game.Who==P2 && ExistP2=='Y'))
+        else if ((Game.Who==P1 && ExistP1=='P')||(Game.Who==P2 && ExistP2=='P'))
+        {
+            ia_primitive(&Game);
+            ExeMove(&Game);
+        }
+        else if ((Game.Who==P1 && ExistP1=='P')||(Game.Who==P2 && ExistP2=='P'))
         {
             ia_primitive(&Game);
             ExeMove(&Game);
