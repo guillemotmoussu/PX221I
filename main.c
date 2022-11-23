@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -446,7 +447,7 @@ void ia_primitive(struct Game *Game)
 
 int main()
 {
-    printf("\nWelcome to my playable version of Reversi !\n");
+    printf("\nWelcome to our playable version of Reversi !\n");
     struct Game Game={StartBoard,0,0,P1,0};
     Game.Board[3][3]=P2;
     Game.Board[3][4]=P1; // 'O' = 79
@@ -471,7 +472,7 @@ int main()
             ExeMove(&Game);
         }
         else BotMove(&Game);
-        Game.Who=P1+P2-Game.Who; // 79+88=167
+        Game.Who=P1+P2-Game.Who;
         Game.tour++;
     }
     Score(Game);
