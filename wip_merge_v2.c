@@ -8,7 +8,7 @@
 #define P1 'X'
 #define P2 'O'
 #define TI '-'
-#define ExistP1 'P'
+#define ExistP1 'N'
 #define ExistP2 'N'
 #define EmptyRank {TI,TI,TI,TI,TI,TI,TI,TI}
 #define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
@@ -109,7 +109,7 @@ void ClearBuffer()
     {
         if (scanf("%c",&buf)==EOF)
         {
-            printf("\n [EOF] DO YOU FEEL SMART ?!\n");
+            printf("\n[EOF]\n");
             exit(3);
         }
     }
@@ -124,7 +124,7 @@ void AskMove(struct Game *Game)
         printf("\nPlayer %c, place a disk, using A1 - H8 format: ",Game->Who);
         if (scanf("%2s",coords)==EOF)
         {
-            printf("\n Wait, EOF ? Really ?\n One time not twice, you fool get out !\n");
+            printf("\n[EOF]\n");
             exit(3);
         }
         else ClearBuffer(); // buffer destroyed
@@ -154,16 +154,16 @@ void ExeMove(struct Game *Game)
     Game->Board[Game->y+0][Game->x+0]=Game->Who; // Placing disk
     if (MoveLegal(*Game,-1,+0)==0) FlipMove(Game,-1,+0); // Going FW
     if (MoveLegal(*Game,+1,+0)==0) FlipMove(Game,+1,+0); // Going FE
-    if (MoveLegal(*Game,+0,+1)==0) FlipMove(Game,+0,+1); // Going FN
-    if (MoveLegal(*Game,+0,-1)==0) FlipMove(Game,+0,-1); // Going FS
-    if (MoveLegal(*Game,+1,+1)==0) FlipMove(Game,+1,+1); // Going NE
-    if (MoveLegal(*Game,-1,-1)==0) FlipMove(Game,-1,-1); // Going SW
-    if (MoveLegal(*Game,-1,+1)==0) FlipMove(Game,-1,+1); // Going NW
-    if (MoveLegal(*Game,+1,-1)==0) FlipMove(Game,+1,-1); // Going SE
+    if (MoveLegal(*Game,+0,+1)==0) FlipMove(Game,+0,+1); // Going FS
+    if (MoveLegal(*Game,+0,-1)==0) FlipMove(Game,+0,-1); // Going FN
+    if (MoveLegal(*Game,+1,+1)==0) FlipMove(Game,+1,+1); // Going SE
+    if (MoveLegal(*Game,-1,-1)==0) FlipMove(Game,-1,-1); // Going NW
+    if (MoveLegal(*Game,-1,+1)==0) FlipMove(Game,-1,+1); // Going SW
+    if (MoveLegal(*Game,+1,-1)==0) FlipMove(Game,+1,-1); // Going NE
     return;
 }
 
-char GameOver(struct Game *Game)
+char GameNotOver(struct Game *Game)
 {
     for(char y=0;y<8;y++)
     {
@@ -197,6 +197,20 @@ void BoardCopy(char BoardS[8][8], char BoardD[8][8])
         }
     }
     return;
+}
+
+char BotFinal(struct Game Game)
+{
+    char eval=0;
+    for(char y=0;y<8;y++)
+    {
+        for(char x=0;x<8;x++)
+        {
+            if(Game.Board[y+0][x+0]==Game.Who) eval++;
+            if(Game.Board[y+0][x+0]==P1+P2-Game.Who) eval--;
+        }
+    }
+    return eval;
 }
 
 char BotEval(struct Game Game)
@@ -329,7 +343,7 @@ char GrowTree(struct Game Game, char depth)
         }
     }
     if (MaxEval!=-Infinity) return MaxEval;
-    NewEval=BotEval(Game);
+    NewEval=BotFinal(Game);
     if (NewEval < 0) return -EvalWin;
     if (NewEval > 0) return EvalWin;
     return 0;
@@ -430,7 +444,6 @@ void ia_primitive(struct Game *Game)
     return;
 }
 
-
 int main()
 {
     printf("\nWelcome to my playable version of Reversi !\n");
@@ -439,7 +452,7 @@ int main()
     Game.Board[3][4]=P1; // 'O' = 79
     Game.Board[4][3]=P1; // 'X' = 88
     Game.Board[4][4]=P2;
-    while (GameOver(&Game))
+    while (GameNotOver(&Game))
     {
         PrintBoard(Game);
         if ((Game.Who==P1 && ExistP1=='Y')||(Game.Who==P2 && ExistP2=='Y'))
@@ -459,5 +472,3 @@ int main()
     Score(Game);
     return 0;
 }
-
-
