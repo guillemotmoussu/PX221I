@@ -34,14 +34,57 @@ void PrintBoard(struct Game Game)
     return;
 }
 
+char FlipMove(struct Game *Game, char dx)
+{
+    char i=1;
+    while()
+//    while(((Game->Color&127)+i*dx/8>=0)&&((Game->Color&127)+i*dx/8<=7)&&((Game->Color&127)+i*dx%8>=0)&&((Game->Color&127)+i*dx%8<=7))
+    {
+        if(Game->Disks&(Game->BitMask<<((Game->Coords&127)+i*dx)))
+        {
+            if(Game->Coords&128)
+            {
+                if(Game->Color&(Game->BitMask<<((Game->Coords&127)+i*dx)))
+                {
+                    for(i--;i>0;i--) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+i*dx));
+                    return i==1;
+                }
+                else i++;
+            }
+            else
+            {
+                if(Game->Color&(Game->BitMask<<((Game->Coords&127)+i*dx))) i++;
+                else
+                {
+                    for(i--;i>0;i--) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+i*dx));
+                    return i==1;
+                }
+            }
+        }
+        else return 1;
+    }
+    return 1;
+}
+
 char ExeMove(struct Game *Game)
 //permettra de jouer un coup
 {
-    // if(Game->Coords&128)
-    // {
-    //     Game->Disks=Game->Disks;
-    // }
-    return 0;
+    if(Game->Disks&(Game->BitMask<<(Game->Coords&127))) return 1;
+    char MoveLegal=0;
+    if(!FlipMove(Game,-7)) MoveLegal=1; // Going NE
+    if(!FlipMove(Game,-8)) MoveLegal=1; // Going FN
+    if(!FlipMove(Game,-9)) MoveLegal=1; // Going NW
+    if(!FlipMove(Game,-1)) MoveLegal=1; // Going FW
+    if(!FlipMove(Game,+7)) MoveLegal=1; // Going SW
+    if(!FlipMove(Game,+8)) MoveLegal=1; // Going FS
+    if(!FlipMove(Game,+9)) MoveLegal=1; // Going SE
+    if(!FlipMove(Game,+1)) MoveLegal=1; // Going FE
+    if(MoveLegal==1)
+    {
+        Game->Disks=Game->Disks|(Game->BitMask<<(Game->Coords&127));
+        if(Game->Coords&128) Game->Color=Game->Color|(Game->BitMask<<(Game->Coords&127));
+    }
+    return MoveLegal==0;
 }
 
 char FinalEval(struct Game Game)
@@ -52,8 +95,16 @@ char FinalEval(struct Game Game)
     {
         if(Game.Disks&(Game.BitMask<<i))
         {
-            if((Game.Color&(Game.BitMask<<i))&&(Game.Coords&128)) eval++; // WIP
-            else eval--;
+            if(Game.Coords&128)
+            {
+                if(Game.Color&(Game.BitMask<<i)) eval++;
+                else eval--;
+            }
+            else
+            {
+                if(Game.Color&(Game.BitMask<<i)) eval--;
+                else eval++;
+            }
         }
     }
     return eval;
@@ -139,6 +190,7 @@ char BotMove(struct Game *Game)
     }
     printf(" Bot %c played: %c%c (eval %i)\n",Game->Coords&128?'O':'X',((BestMove&127)%8)+'A',((BestMove&127)/8)+'1',MaxEval);
     Game->Coords=BestMove;
+    ExeMove(Game);
     return 0;
 }
 
