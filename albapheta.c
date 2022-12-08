@@ -5,19 +5,20 @@
 
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 5
+#define MaxDepth 6
 #define ExistP1 0
 #define ExistP2 0
 
 struct Game
 {
-    unsigned long int Disks;
-    unsigned long int Color;
-    unsigned long int BitMask;
-    char Coords;
+    unsigned long int Disks;        //Pions sur le plateau
+    unsigned long int Color;        //Couleur sur le plateau
+    unsigned long int BitMask;      //Sert à faire des opérations bit à bit
+    char Coords; //Stocke le joueur actif,  les erreurs, et les coordonnées à jouer
 };
 
 void PrintBoard(struct Game Game)
+//permet d'afficher le plateau
 {
     printf("\n   # A B C D E F G H #\n");
     for(char y=0;y<8;y++)
@@ -34,11 +35,17 @@ void PrintBoard(struct Game Game)
 }
 
 char ExeMove(struct Game *Game)
+//permettra de jouer un coup
 {
+    // if(Game->Coords&128)
+    // {
+    //     Game->Disks=Game->Disks;
+    // }
     return 0;
 }
 
 char FinalEval(struct Game Game)
+//permettra d'évaluer une position quand la partie est terminée
 {
     char eval=0;
     for(char i=0;i<64;i++)
@@ -53,33 +60,34 @@ char FinalEval(struct Game Game)
 }
 
 char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
+//Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
 {
     if (depth<1) return FinalEval(Game);
     char MaxEval=-Infinity;
     char NewEval=0;
-    unsigned long int SaveDisks=Game.Disks;
+    unsigned long int SaveDisks=Game.Disks; //sauvegardes
     unsigned long int SaveColor=Game.Color;
     Game.Coords=~(Game.Coords|127); // OPTI ?
     for(char i=0;i<64;i++)
     {
-        if(!ExeMove(&Game))
+        if(!ExeMove(&Game)) //on teste si le coup est possible
         {
             NewEval=GrowTree(Game,depth-1,-CutEval,-TopEval);
             assert(NewEval!=Infinity);
             assert(NewEval!=-Infinity);
-            if(CutEval<=NewEval) return -NewEval; // This branch is useless, cut it right now !
-            if(TopEval<NewEval) TopEval=NewEval; // This basically mean we cut the following branch
-            if(MaxEval<NewEval) MaxEval=NewEval; // No cuts, but still a better move for opponent...
-            Game.Disks=SaveDisks;
+            if(CutEval<=NewEval) return -NewEval; //On coupe la branche actuelle
+            if(TopEval<NewEval) TopEval=NewEval; //On vient de couper une branche
+            if(MaxEval<NewEval) MaxEval=NewEval; //On a trouvé un meilleur coup, mais pas de coupe supplémentaire
+            Game.Disks=SaveDisks; //On annule le coup joué
             Game.Color=SaveColor;
         }
         Game.Coords++;
     }
-    if(MaxEval!=-Infinity) return -MaxEval;
+    if(MaxEval!=-Infinity) return -MaxEval; //si on a trouvé une valeur max pour le joueur adverse on la retourne
     Game.Coords=Game.Coords^192; // OPTI ?
     for(char i=0;i<64;i++)
     {
-        if(!ExeMove(&Game))
+        if(!ExeMove(&Game)) //cette fois on regarde les coups du joueur actuel
         {
             NewEval=GrowTree(Game,depth-1,TopEval,CutEval);
             assert(NewEval!=Infinity);
