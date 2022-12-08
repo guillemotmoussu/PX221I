@@ -3,9 +3,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/*
+#include <string.h>
+#include "userNetwork.h"
+*/
+
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 6
+#define MaxDepth 8
 #define ExistP1 0
 #define ExistP2 0
 
@@ -37,8 +42,14 @@ void PrintBoard(struct Game Game)
 char FlipMove(struct Game *Game, char dx)
 {
     char i=1;
-    while()
-//    while(((Game->Color&127)+i*dx/8>=0)&&((Game->Color&127)+i*dx/8<=7)&&((Game->Color&127)+i*dx%8>=0)&&((Game->Color&127)+i*dx%8<=7))
+    while(  (dx!=-7||((((Game->Coords&127)+i*dx)/8>=0)&&(((Game->Coords&127)+i*dx)%8!=0)))&&
+            (dx!=-8||(((Game->Coords&127)+i*dx)/8>=0))&&
+            (dx!=-9||((((Game->Coords&127)+i*dx)/8>=0)&&(((Game->Coords&127)+i*dx)%8!=7)))&&
+            (dx!=-1||(((Game->Coords&127)+i*dx)%8!=7))&&
+            (dx!=+7||((((Game->Coords&127)+i*dx)/8<=7)&&(((Game->Coords&127)+i*dx)%8!=7)))&&
+            (dx!=+8||(((Game->Coords&127)+i*dx)/8<=7))&&
+            (dx!=+9||((((Game->Coords&127)+i*dx)/8<=7)&&(((Game->Coords&127)+i*dx)%8!=0)))&&
+            (dx!=+1||(((Game->Coords&127)+i*dx)%8!=0))  )
     {
         if(Game->Disks&(Game->BitMask<<((Game->Coords&127)+i*dx)))
         {
@@ -46,7 +57,7 @@ char FlipMove(struct Game *Game, char dx)
             {
                 if(Game->Color&(Game->BitMask<<((Game->Coords&127)+i*dx)))
                 {
-                    for(i--;i>0;i--) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+i*dx));
+                    for(char f=1;f<i;f++) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+f*dx));
                     return i==1;
                 }
                 else i++;
@@ -56,7 +67,7 @@ char FlipMove(struct Game *Game, char dx)
                 if(Game->Color&(Game->BitMask<<((Game->Coords&127)+i*dx))) i++;
                 else
                 {
-                    for(i--;i>0;i--) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+i*dx));
+                    for(char f=1;f<i;f++) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+f*dx));
                     return i==1;
                 }
             }
@@ -84,7 +95,7 @@ char ExeMove(struct Game *Game)
         Game->Disks=Game->Disks|(Game->BitMask<<(Game->Coords&127));
         if(Game->Coords&128) Game->Color=Game->Color|(Game->BitMask<<(Game->Coords&127));
     }
-    return MoveLegal==0;
+    return !MoveLegal;
 }
 
 char FinalEval(struct Game Game)
@@ -159,7 +170,7 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
 
 char BotMove(struct Game *Game)
 {
-    printf(" Bot %c is thinking...\n",Game->Coords&128?'O':'X');
+    printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
     char MaxEval=-Infinity;
     char NewEval=0;
     unsigned long int SaveDisks=Game->Disks;
@@ -173,7 +184,7 @@ char BotMove(struct Game *Game)
             NewEval=GrowTree(*Game,MaxDepth,-Infinity,Infinity);
             assert(NewEval!=Infinity);
             assert(NewEval!=-Infinity);
-            if(MaxEval<NewEval)
+            if(MaxEval<=NewEval)
             {
                 MaxEval=NewEval;
                 BestMove=Game->Coords;
@@ -185,10 +196,10 @@ char BotMove(struct Game *Game)
     }
     if(BestMove==64)
     {
-        printf(" Uh oh ! Bot %c couldn't find any moves !\n",Game->Coords&128?'O':'X');
+        printf(" Uh oh ! Bot %c couldn't find any moves !\n",Game->Coords&128?'X':'O');
         return 1;
     }
-    printf(" Bot %c played: %c%c (eval %i)\n",Game->Coords&128?'O':'X',((BestMove&127)%8)+'A',((BestMove&127)/8)+'1',MaxEval);
+    printf(" Bot %c played: %c%c (eval %i)\n",Game->Coords&128?'X':'O',((BestMove&127)%8)+'A',((BestMove&127)/8)+'1',MaxEval);
     Game->Coords=BestMove;
     ExeMove(Game);
     return 0;
@@ -202,14 +213,14 @@ char GameOver(struct Game Game)
         if(!ExeMove(&Game)) return 0;
         Game.Coords++;
     }
-    printf("Seems like player %c can't play...\n",Game.Coords&128?'O':'X');
+    printf("Seems like player %c can't play...\n",Game.Coords&128?'X':'O');
     Game.Coords=Game.Coords^192; // OPTI ?
     for(char i=0;i<64;i++)
     {
         if(!ExeMove(&Game)) return 0;
         Game.Coords++;
     }
-    printf("Seems like player %c can't play either !\n",Game.Coords&128?'O':'X');
+    printf("Seems like player %c can't play either !\n",Game.Coords&128?'X':'O');
     return 1;
 }
 
@@ -234,8 +245,8 @@ void Score(struct Game Game)
 
 int main()
 {
-    printf("\nWelcome to my playable version of Reversi !\n");
-    struct Game Game={0,0,0,0};
+    printf("\nWelcome to our playable version of Reversi !\n");
+    struct Game Game={0,0,0,128};
     Game.BitMask=1;
     Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
     Game.Color=Game.Color&~(Game.BitMask<<(3*8+3));

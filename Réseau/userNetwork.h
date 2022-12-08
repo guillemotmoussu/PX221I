@@ -28,7 +28,7 @@ typedef enum {
 } states; 
 
 /**
- * \struct ServerGame 
+ * \struct game 
  * \brief Structure contenant les paramètres nécessaires pour un joueur.
  * Cette structure est passée en argument des fonctions de la librairie qui l'utilisent 
  * Soit pour mettre à jour les paramètres, 
@@ -45,11 +45,13 @@ typedef struct  {
 	int len; 		/*!< longueur des données */
 	states state; 		/*!< L'état de la connexion */
 	int socket; 		/*!< La socket utilisée pour la connexion */
-} ServerGame; 
+} game; 
 
-int registerGameOthello(ServerGame *g,char *password); 
-int waitMoveOthello(ServerGame *g);
-ServerGame *allocateGameOthello();
-int freeGameOthello(ServerGame *g);
-int startGameOthello(ServerGame *g);
-int doMoveOthello(ServerGame *g);
+int registerGameOthello(game *Server_Game,char *password); 
+int waitMoveOthello(game *Server_Game);
+game *allocateGameOthello();
+int freeGameOthello(game *Server_Game);
+int startGameOthello(game *Server_Game);
+int doMoveOthello(game *Server_Game);
+void getStatusOthello(game *Server_Game);
+

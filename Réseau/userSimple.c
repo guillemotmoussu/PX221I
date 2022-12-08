@@ -1,60 +1,66 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "userNetwork.h"
 
-#include <stdlib.h> 
-#include <stdio.h> 
-#include <string.h> 
-#include "userNetwork.h" 
-
-#define BLACK 0 
-
-int main(int argc,char *argv[]) 
+/*
+struct Game
 {
-	game *g;
-	int move; 
+    unsigned long int Disks;        //Pions sur le plateau
+    unsigned long int Color;        //Couleur sur le plateau
+    unsigned long int BitMask;      //Sert à faire des opérations bit à bit
+    char Coords; //Stocke le joueur actif,  les erreurs, et les coordonnées à jouer
+};
+*/
 
-	if ((g=allocateGameOthello())==NULL) exit(3); 
+int main()
+{
+	game *Server_Game;
+	int move;
 
-	if (argc > 3 ) { 
-		g->userId=atoi(argv[3]); 
-		g->address=argv[2]; 
+	Server_Game = allocateGameOthello();
+	Server_Game->userId=9;
+	Server_Game->address="192.168.132.18";
+	Server_Game->port = 8080;
+
+	if (registerGameOthello(Server_Game, "binome9") < 0)
+	{ // test de l'authentification auprès du serveur
+		exit(-1);
 	}
-	else { printf("usage : %s <userPasswd> <ip ad> <userId>\n",argv[0]); exit(-1); }
 
-	g->port=8080; //par exemple
-
-	if (registerGameOthello(g,argv[1]) < 0 ) { exit(-1); }	// test de l'authentification auprès du serveur 
-
-	if (startGameOthello(g) < 0 ) { // cet appel est bloquant en attendant un adversaire 
-		printf("error Starting Game\n"); 
-		exit(-1); 
+	if (startGameOthello(Server_Game) < 0)
+	{ // cet appel est bloquant en attendant un adversaire
+		printf("error Starting Game\n");
+		exit(-1);
 	}
-	printf("I am player %s\n",(g->myColor==BLACK)?"black":"white"); 
 
 	// debut de partie
-	while (g->state == PLAYING && !feof(stdin)) {
-	 	if (g->myColor != g->currentPlayer) { // attente du coup de l'adversaire 
-			if ((move=waitMoveOthello(g)) == 0 ) {
-				printf("Game status %d: \t",g->state); 
-				if (g->state == PLAYING) { 
-					printf("Received move from server %d (x=%d,y=%d)\n",g->move,g->move%8,g->move/8); 
+	while (Server_Game->state == PLAYING && !feof(stdin))
+	{
+		//afficher notre plateau
+
+		if (Server_Game->myColor != Server_Game->currentPlayer)
+		{ // attente du coup de l'adversaire
+			if (waitMoveOthello(Server_Game) == 0)
+			{
+				printf("Game status %d: \t", Server_Game->state);
+				if (Server_Game->state == PLAYING)
+				{
+					//sauvegarder coup adversaire dans notre structure
 				}
 			}
 		}
-	 	else { 		
-			g->move=65; // si scanf correct cette valeur est modifiée, sinon cela terminera la partie. 
-			// recuperation du coup sur stdin 
-			printf("Enter your move:\n");
-			scanf("%d",&(g->move)); 
-			printf("playing move %d (x=%d,y=%d)\n",g->move,g->move%8,g->move/8);
-			doMoveOthello(g);	// envoie du coup à l'adversaire 
-	   	}
-		g->currentPlayer=!(g->currentPlayer);  	// on change de joueur 
-	} 
-	// fin de partie 
-	printf("Final game status = %d\n",g->state); 
-	freeGameOthello(g);
-	return 0; 
+		else
+		{
+			Server_Game->move = 65; // si botmove correct cette valeur est modifiée, sinon cela terminera la partie.
+			//Jouer notre coup 
+			doMoveOthello(Server_Game);
+		}
+		Server_Game->currentPlayer = !(Server_Game->currentPlayer); // on change de joueur
+	}
+	// fin de partie
+	printf("Final game status = %d\n", Server_Game->state);
+	//Afficher score
+	freeGameOthello(Server_Game);
+	return 0;
 }
-
-
-
-	
