@@ -8,8 +8,8 @@
 #define Infinity 120
 #define EvalWin 110
 #define MaxDepth 7
-#define ExistP1 0
-#define ExistP2 0
+#define ExistP1 0 //utile ?
+#define ExistP2 0 //utile ?
 
 struct Game
 {
@@ -19,8 +19,12 @@ struct Game
     char Coords; //Stocke le joueur actif,  les erreurs, et les coordonnées à jouer
 };
 
+/**
+ * @brief Affiche le plateau dans la console
+ * 
+ * @param Game 
+ */
 void PrintBoard(struct Game Game)
-//permet d'afficher le plateau
 {
     printf("\n   # A B C D E F G H #\n");
     for(char y=0;y<8;y++)
@@ -36,6 +40,13 @@ void PrintBoard(struct Game Game)
     return;
 }
 
+/**
+ * @brief Joue un coup sur le plateau
+ * 
+ * @param Game 
+ * @param dx 
+ * @return char 
+ */
 char FlipMove(struct Game *Game, char dx)
 {
     char i=1;
@@ -71,8 +82,13 @@ char FlipMove(struct Game *Game, char dx)
     return 1;
 }
 
+/**
+ * @brief Permet de jouer un coup
+ * 
+ * @param Game 
+ * @return char 
+ */
 char ExeMove(struct Game *Game)
-//permettra de jouer un coup
 {
     if(Game->Disks&(Game->BitMask<<(Game->Coords&127))) return 1;
     char MoveLegal=1;
@@ -92,8 +108,13 @@ char ExeMove(struct Game *Game)
     return MoveLegal;
 }
 
+/**
+ * @brief Permet d'évaluer une position quand la partie est terminée
+ * 
+ * @param Game 
+ * @return char 
+ */
 char FinalEval(struct Game Game)
-//permettra d'évaluer une position quand la partie est terminée
 {
     char eval=0;
     for(char i=0;i<64;i++)
@@ -115,6 +136,12 @@ char FinalEval(struct Game Game)
     return eval;
 }
 
+/**
+ * @brief Fonction d'évaluation du plateau
+ * 
+ * @param Game 
+ * @return char 
+ */
 char BotEval(struct Game Game)
 {
     char eval=0;
@@ -180,8 +207,16 @@ char BotEval(struct Game Game)
     return eval;
 }
 
+/**
+ * @brief Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
+ * 
+ * @param Game 
+ * @param depth 
+ * @param TopEval 
+ * @param CutEval 
+ * @return char 
+ */
 char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
-//Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
 {
     if (depth<1) return BotEval(Game);
     char MaxEval=-Infinity;
@@ -223,9 +258,15 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
     return 0;
 }
 
+/**
+ * @brief Algo qui détermine le coup à jouer et le joue
+ * 
+ * @param Game 
+ * @return char 
+ */
 char BotMove(struct Game *Game)
 {
-    printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
+    //printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
     char MaxEval=-Infinity;
     char NewEval=0;
     unsigned long int SaveDisks=Game->Disks;
@@ -258,7 +299,13 @@ char BotMove(struct Game *Game)
     return 0;
 }
 
-char GameOver(struct Game Game)
+/**
+ * @brief Fonction qui détermine si la partie est terminée (personne ne peut jouer)
+ * 
+ * @param Game 
+ * @return char 
+ */
+char GameOver(struct Game Game) //toujours utile ?
 {
     for(Game.Coords=Game.Coords&128;!(Game.Coords&64);Game.Coords++) if(!ExeMove(&Game)) return 0;
     printf("Seems like player %c can't play...\n",Game.Coords&128?'X':'O');
@@ -267,6 +314,11 @@ char GameOver(struct Game Game)
     return 1;
 }
 
+/**
+ * @brief Fonction qui calcule le score final du plateau
+ * 
+ * @param Game 
+ */
 void Score(struct Game Game)
 {
     PrintBoard(Game);
@@ -298,18 +350,9 @@ int main()
     Game.Color=Game.Color| (Game.BitMask<<(4*8+3));
     Game.Disks=Game.Disks| (Game.BitMask<<(4*8+4));
     Game.Color=Game.Color&~(Game.BitMask<<(4*8+4));
-    while(!GameOver(Game))
-    {
-        PrintBoard(Game);
-        BotMove(&Game);
-        Game.Coords=Game.Coords^128;
-    }
-    Score(Game);
-
-    // ajout du réseau
-
+    
     game *Server_Game;
-	int move;
+	int move; //utile ?
 
 	Server_Game = allocateGameOthello();
 	Server_Game->userId=9;
@@ -317,9 +360,7 @@ int main()
 	Server_Game->port = 8080;
 
 	if (registerGameOthello(Server_Game, "binome9") < 0)
-	{ // test de l'authentification auprès du serveur
-		exit(-1);
-	}
+	{exit(-1);} // test de l'authentification auprès du serveur
 
 	if (startGameOthello(Server_Game) < 0)
 	{ // cet appel est bloquant en attendant un adversaire
@@ -328,11 +369,12 @@ int main()
 	}
 
 	printf("I am player %s\n",(Server_Game->myColor==0)?"black":"white"); 
+    Server_Game->myColor=Game.Coords^128; // sychroniser notre joueur avec celui attribué par le serveur
 
 	// debut de partie
 	while (Server_Game->state == PLAYING && !feof(stdin))
 	{
-		//afficher notre plateau
+		PrintBoard(Game); //On affiche notre plateau
 
 		if (Server_Game->myColor != Server_Game->currentPlayer)
 		{ // attente du coup de l'adversaire
@@ -341,7 +383,7 @@ int main()
 				printf("Game status %d: \t", Server_Game->state);
 				if (Server_Game->state == PLAYING)
 				{
-					//printf("Received move from server %d (x=%d,y=%d)\n",g->move,g->move%8,g->move/8); 
+					printf("Received move from server %d (x=%d,y=%d)\n",Server_Game->move,Server_Game->move%8,Server_Game->move/8); 
 					//sauvegarder coup adversaire dans notre structure
 				}
 			}
@@ -349,21 +391,34 @@ int main()
 		else
 		{
 			Server_Game->move = 65; // si botmove correct cette valeur est modifiée, sinon cela terminera la partie.
-			//Jouer notre coup 
+            // /!\ qu'en est-il si on ne peut pas jouer ?
+			BotMove(&Game); //Jouer notre coup 
+            //sauvegarder notre coup dans la structure du serveur
+
 			/*
 			printf("Enter your move:\n");
 			scanf("%d",&(g->move)); 
 			printf("playing move %d (x=%d,y=%d)\n",g->move,g->move%8,g->move/8);
 			*/
+
 			doMoveOthello(Server_Game);
 		}
+        Game.Coords=Game.Coords^128;
 		Server_Game->currentPlayer = !(Server_Game->currentPlayer); // on change de joueur
 	}
+
 	// fin de partie
 	printf("Final game status = %d\n", Server_Game->state);
-	//Afficher score
+	Score(Game); //Afficher score
 	freeGameOthello(Server_Game);
 
-    
     return 0;
 }
+
+/*
+Reste à faire :
+- sychroniser notre joueur avec celui attribué par le serveur -> ok ?
+- sauvegarder coup adversaire dans notre structure
+- sauvegarder notre coup dans la structure du serveur
+- solution pour passer son tour
+*/
