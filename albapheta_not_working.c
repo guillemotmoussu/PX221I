@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <time.h> // Only for time()
-#include <unistd.h> // Only for sleep()
 
 /*
 #include <string.h>
@@ -12,7 +10,7 @@
 
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 7
+#define MaxDepth 8
 #define ExistP1 0
 #define ExistP2 0
 
@@ -44,11 +42,14 @@ void PrintBoard(struct Game Game)
 char FlipMove(struct Game *Game, char dx)
 {
     char i=1;
-    while   (
-            ((Game->Coords&127)+i*dx>=0)&&((Game->Coords&127)+i*dx<=63)
-            &&((dx!=-7&&dx!=+1&&dx!=+9)||(((Game->Coords&127)+i*dx)%8!=0))
-            &&((dx!=+7&&dx!=-1&&dx!=-9)||(((Game->Coords&127)+i*dx)%8!=7))
-            )
+    while(  (dx!=-7||((((Game->Coords&127)+i*dx)/8>=0)&&(((Game->Coords&127)+i*dx)%8!=0)))&&
+            (dx!=-8||(((Game->Coords&127)+i*dx)/8>=0))&&
+            (dx!=-9||((((Game->Coords&127)+i*dx)/8>=0)&&(((Game->Coords&127)+i*dx)%8!=7)))&&
+            (dx!=-1||(((Game->Coords&127)+i*dx)%8!=7))&&
+            (dx!=+7||((((Game->Coords&127)+i*dx)/8<=7)&&(((Game->Coords&127)+i*dx)%8!=7)))&&
+            (dx!=+8||(((Game->Coords&127)+i*dx)/8<=7))&&
+            (dx!=+9||((((Game->Coords&127)+i*dx)/8<=7)&&(((Game->Coords&127)+i*dx)%8!=0)))&&
+            (dx!=+1||(((Game->Coords&127)+i*dx)%8!=0))  )
     {
         if(Game->Disks&(Game->BitMask<<((Game->Coords&127)+i*dx)))
         {
@@ -80,21 +81,21 @@ char ExeMove(struct Game *Game)
 //permettra de jouer un coup
 {
     if(Game->Disks&(Game->BitMask<<(Game->Coords&127))) return 1;
-    char MoveLegal=1;
-    if(!FlipMove(Game,-7)) MoveLegal=0; // Going NE
-    if(!FlipMove(Game,-8)) MoveLegal=0; // Going FN
-    if(!FlipMove(Game,-9)) MoveLegal=0; // Going NW
-    if(!FlipMove(Game,-1)) MoveLegal=0; // Going FW
-    if(!FlipMove(Game,+7)) MoveLegal=0; // Going SW
-    if(!FlipMove(Game,+8)) MoveLegal=0; // Going FS
-    if(!FlipMove(Game,+9)) MoveLegal=0; // Going SE
-    if(!FlipMove(Game,+1)) MoveLegal=0; // Going FE
-    if(MoveLegal==0)
+    char MoveLegal=0;
+    if(!FlipMove(Game,-7)) MoveLegal=1; // Going NE
+    if(!FlipMove(Game,-8)) MoveLegal=1; // Going FN
+    if(!FlipMove(Game,-9)) MoveLegal=1; // Going NW
+    if(!FlipMove(Game,-1)) MoveLegal=1; // Going FW
+    if(!FlipMove(Game,+7)) MoveLegal=1; // Going SW
+    if(!FlipMove(Game,+8)) MoveLegal=1; // Going FS
+    if(!FlipMove(Game,+9)) MoveLegal=1; // Going SE
+    if(!FlipMove(Game,+1)) MoveLegal=1; // Going FE
+    if(MoveLegal==1)
     {
         Game->Disks=Game->Disks|(Game->BitMask<<(Game->Coords&127));
         if(Game->Coords&128) Game->Color=Game->Color|(Game->BitMask<<(Game->Coords&127));
     }
-    return MoveLegal;
+    return !MoveLegal;
 }
 
 char FinalEval(struct Game Game)
@@ -128,7 +129,8 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
     char NewEval=0;
     unsigned long int SaveDisks=Game.Disks; //sauvegardes
     unsigned long int SaveColor=Game.Color;
-    for(Game.Coords=~(Game.Coords|127);!(Game.Coords&64);Game.Coords++)
+    Game.Coords=~(Game.Coords|127); // OPTI ?
+    for(char i=0;i<64;i++)
     {
         if(!ExeMove(&Game)) //on teste si le coup est possible
         {
@@ -141,9 +143,11 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
             Game.Disks=SaveDisks; //On annule le coup joué
             Game.Color=SaveColor;
         }
+        Game.Coords++;
     }
     if(MaxEval!=-Infinity) return -MaxEval; //si on a trouvé une valeur max pour le joueur adverse on la retourne
-    for(Game.Coords=Game.Coords^192;!(Game.Coords&64);Game.Coords++)
+    Game.Coords=Game.Coords^192; // OPTI ?
+    for(char i=0;i<64;i++)
     {
         if(!ExeMove(&Game)) //cette fois on regarde les coups du joueur actuel
         {
@@ -155,6 +159,7 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
             Game.Disks=SaveDisks;
             Game.Color=SaveColor;
         }
+        Game.Coords++;
     }
     if(MaxEval!=-Infinity) return MaxEval;
     NewEval=FinalEval(Game);
@@ -171,14 +176,15 @@ char BotMove(struct Game *Game)
     unsigned long int SaveDisks=Game->Disks;
     unsigned long int SaveColor=Game->Color;
     char BestMove=64;
-    for(Game->Coords=Game->Coords&128;!(Game->Coords&64);Game->Coords++)
+    Game->Coords=Game->Coords&128; // OPTI ?
+    for(char i=0;i<64;i++)
     {
         if(!ExeMove(Game))
         {
             NewEval=GrowTree(*Game,MaxDepth,-Infinity,Infinity);
             assert(NewEval!=Infinity);
             assert(NewEval!=-Infinity);
-            if(MaxEval<NewEval||((MaxEval==NewEval)&&(0b11!=(0b11&rand()))))
+            if(MaxEval<=NewEval)
             {
                 MaxEval=NewEval;
                 BestMove=Game->Coords;
@@ -186,6 +192,7 @@ char BotMove(struct Game *Game)
             Game->Disks=SaveDisks;
             Game->Color=SaveColor;
         }
+        Game->Coords++;
     }
     if(BestMove==64)
     {
@@ -200,9 +207,19 @@ char BotMove(struct Game *Game)
 
 char GameOver(struct Game Game)
 {
-    for(Game.Coords=Game.Coords&128;!(Game.Coords&64);Game.Coords++) if(!ExeMove(&Game)) return 0;
+    Game.Coords=Game.Coords&128; // OPTI ?
+    for(char i=0;i<64;i++)
+    {
+        if(!ExeMove(&Game)) return 0;
+        Game.Coords++;
+    }
     printf("Seems like player %c can't play...\n",Game.Coords&128?'X':'O');
-    for(Game.Coords=Game.Coords^192;!(Game.Coords&64);Game.Coords++) if(!ExeMove(&Game)) return 0;
+    Game.Coords=Game.Coords^192; // OPTI ?
+    for(char i=0;i<64;i++)
+    {
+        if(!ExeMove(&Game)) return 0;
+        Game.Coords++;
+    }
     printf("Seems like player %c can't play either !\n",Game.Coords&128?'X':'O');
     return 1;
 }
@@ -226,7 +243,7 @@ void Score(struct Game Game)
     return;
 }
 
-int Whymain()
+int main()
 {
     printf("\nWelcome to our playable version of Reversi !\n");
     struct Game Game={0,0,0,128};
@@ -239,7 +256,6 @@ int Whymain()
     Game.Color=Game.Color| (Game.BitMask<<(4*8+3));
     Game.Disks=Game.Disks| (Game.BitMask<<(4*8+4));
     Game.Color=Game.Color&~(Game.BitMask<<(4*8+4));
-    srand(time(NULL));
     while(!GameOver(Game))
     {
         PrintBoard(Game);
@@ -250,12 +266,3 @@ int Whymain()
     return 0;
 }
 
-int main()
-{
-    while(1)
-    {
-        Whymain();
-        printf(" GAME ENDED !\n An other one will start in 3s...\n");
-        sleep(3);
-    }
-}
