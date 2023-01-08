@@ -120,10 +120,75 @@ char FinalEval(struct Game Game)
     return eval;
 }
 
+char BotEval(struct Game Game)
+{
+    char eval=0;
+    int TabForce[]=
+    {
+       600,-150,30 ,10 ,10 ,30 ,-150, 600,
+      -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
+       30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
+       10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
+       10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
+       30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
+      -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
+       600,-150,30 ,10 ,10 ,30 ,-150, 600
+    };
+    char YouCorners=0;
+    char AdvCorners=0;
+    char YouNumber=0;
+    char AdvNumber=0;
+    int force=0;
+    for(char i=0;i<64;i++)
+    {
+        if(Game.Disks&(Game.BitMask<<i))
+        {
+            if(Game.Coords&128)
+            {
+                if(Game.Color&(Game.BitMask<<i))
+                {
+                    force+=TabForce[i+0];
+                    YouNumber++;
+                    if(i==0||i==7||i==56||i==63) YouCorners++;
+                }
+                else
+                {
+                    force-=TabForce[i+0];
+                    AdvNumber++;
+                    if(i==0||i==7||i==56||i==63) AdvCorners++;
+                }
+            }
+            else
+            {
+                if(Game.Color&(Game.BitMask<<i))
+                {
+                    force-=TabForce[i+0];
+                    AdvNumber++;
+                    if(i==0||i==7||i==56||i==63) AdvCorners++;
+                }
+                else
+                {
+                    force+=TabForce[i+0];
+                    YouNumber++;
+                    if(i==0||i==7||i==56||i==63) YouCorners++;
+                }
+            }
+        }
+    }
+    eval=
+        (
+        (50*((YouCorners+AdvCorners==0)?0:((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
+        (20*((YouNumber+AdvNumber==0)?0:((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
+        (30*(force/50))
+        )/100;
+    assert(eval<100 && eval >-100);
+    return eval;
+}
+
 char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
 //Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
 {
-    if (depth<1) return FinalEval(Game);
+    if (depth<1) return BotEval(Game);
     char MaxEval=-Infinity;
     char NewEval=0;
     unsigned long int SaveDisks=Game.Disks; //sauvegardes
