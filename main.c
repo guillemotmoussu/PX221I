@@ -2,13 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <time.h> // Only for time()
-#include <unistd.h> // Only for sleep()
-
-/*
 #include <string.h>
 #include "userNetwork.h"
-*/
 
 #define Infinity 120
 #define EvalWin 110
@@ -291,9 +286,8 @@ void Score(struct Game Game)
     return;
 }
 
-int Whymain()
+int main()
 {
-    printf("\nWelcome to our playable version of Reversi !\n");
     struct Game Game={0,0,0,128};
     Game.BitMask=1;
     Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
@@ -304,7 +298,6 @@ int Whymain()
     Game.Color=Game.Color| (Game.BitMask<<(4*8+3));
     Game.Disks=Game.Disks| (Game.BitMask<<(4*8+4));
     Game.Color=Game.Color&~(Game.BitMask<<(4*8+4));
-    srand(time(NULL));
     while(!GameOver(Game))
     {
         PrintBoard(Game);
@@ -312,15 +305,65 @@ int Whymain()
         Game.Coords=Game.Coords^128;
     }
     Score(Game);
-    return 0;
-}
 
-int main()
-{
-    while(1)
-    {
-        Whymain();
-        printf(" GAME ENDED !\n An other one will start in 3s...\n");
-        sleep(3);
-    }
+    // ajout du réseau
+
+    game *Server_Game;
+	int move;
+
+	Server_Game = allocateGameOthello();
+	Server_Game->userId=9;
+	Server_Game->address="192.168.132.18";
+	Server_Game->port = 8080;
+
+	if (registerGameOthello(Server_Game, "binome9") < 0)
+	{ // test de l'authentification auprès du serveur
+		exit(-1);
+	}
+
+	if (startGameOthello(Server_Game) < 0)
+	{ // cet appel est bloquant en attendant un adversaire
+		printf("error Starting Game\n");
+		exit(-1);
+	}
+
+	printf("I am player %s\n",(Server_Game->myColor==0)?"black":"white"); 
+
+	// debut de partie
+	while (Server_Game->state == PLAYING && !feof(stdin))
+	{
+		//afficher notre plateau
+
+		if (Server_Game->myColor != Server_Game->currentPlayer)
+		{ // attente du coup de l'adversaire
+			if (waitMoveOthello(Server_Game) == 0)
+			{
+				printf("Game status %d: \t", Server_Game->state);
+				if (Server_Game->state == PLAYING)
+				{
+					//printf("Received move from server %d (x=%d,y=%d)\n",g->move,g->move%8,g->move/8); 
+					//sauvegarder coup adversaire dans notre structure
+				}
+			}
+		}
+		else
+		{
+			Server_Game->move = 65; // si botmove correct cette valeur est modifiée, sinon cela terminera la partie.
+			//Jouer notre coup 
+			/*
+			printf("Enter your move:\n");
+			scanf("%d",&(g->move)); 
+			printf("playing move %d (x=%d,y=%d)\n",g->move,g->move%8,g->move/8);
+			*/
+			doMoveOthello(Server_Game);
+		}
+		Server_Game->currentPlayer = !(Server_Game->currentPlayer); // on change de joueur
+	}
+	// fin de partie
+	printf("Final game status = %d\n", Server_Game->state);
+	//Afficher score
+	freeGameOthello(Server_Game);
+
+    
+    return 0;
 }
