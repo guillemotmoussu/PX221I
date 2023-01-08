@@ -2,31 +2,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
+#include <time.h> // Only for time()
+#include <unistd.h> // Only for sleep()
 
-#define P1 'X'
-#define P2 'O'
-#define TI '-'
-#define ExistP1 'P'
-#define ExistP2 'N'
-#define EmptyRank {TI,TI,TI,TI,TI,TI,TI,TI}
-#define StartBoard {EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank,EmptyRank}
-#define MaxDepth 1
+/*
+#include <string.h>
+#include "userNetwork.h"
+*/
+
 #define Infinity 120
 #define EvalWin 110
+#define MaxDepth 7
+#define ExistP1 0
+#define ExistP2 0
 
 struct Game
 {
-    char Board[8][8];
-    char x;
-    char y;
-    char Who;
-    int tour;
+    unsigned long int Disks;        //Pions sur le plateau
+    unsigned long int Color;        //Couleur sur le plateau
+    unsigned long int BitMask;      //Sert à faire des opérations bit à bit
+    char Coords; //Stocke le joueur actif,  les erreurs, et les coordonnées à jouer
 };
 
 void PrintBoard(struct Game Game)
+//permet d'afficher le plateau
 {
     printf("\n   # A B C D E F G H #\n");
     for(char y=0;y<8;y++)
@@ -34,181 +33,88 @@ void PrintBoard(struct Game Game)
         printf("   %i",y+1);
         for(char x=0;x<8;x++)
         {
-            if (Game.Board[y+0][x+0]==P1) printf(" X");
-            if (Game.Board[y+0][x+0]==P2) printf(" O");
-            if (Game.Board[y+0][x+0]==TI) printf(" -");
+            printf(" %c",!(Game.Disks&(Game.BitMask<<(y*8+x)))?'-':(Game.Color&(Game.BitMask<<(y*8+x))?'X':'O'));
         }
         printf(" %i\n",y+1);
     }
-    printf("   # A B C D E F G H #\n");
+    printf("   # A B C D E F G H #\n\n");
     return;
 }
 
-void Score(struct Game Game)
-{
-    PrintBoard(Game);
-    char Disk1=0,Disk2=0,Empty=0;
-    for(char y=0;y<8;y++)
-    {
-        for(char x=0;x<8;x++)
-        {
-            if (Game.Board[y+0][x+0]==P1) Disk1++;
-            if (Game.Board[y+0][x+0]==P2) Disk2++;
-            if (Game.Board[y+0][x+0]==TI) Empty++;
-        }
-    }
-    if (Disk1<Disk2) Disk2+=Empty;
-    if (Disk2<Disk1) Disk1+=Empty;
-    printf("Game finished, score: %i-%i\n",Disk1,Disk2);
-    return;
-}
-
-char MoveLegal(struct Game Game, char dx, char dy)
+char FlipMove(struct Game *Game, char dx)
 {
     char i=1;
-    while((Game.x+i<8 || dx!=1) && (Game.y+i<8 || dy!=1) && (Game.x+1>i || dx!=-1) && (Game.y+1>i || dy!=-1))
+    while   (
+            ((Game->Coords&127)+i*dx>=0)&&((Game->Coords&127)+i*dx<=63)
+            &&((dx!=-7&&dx!=+1&&dx!=+9)||(((Game->Coords&127)+i*dx)%8!=0))
+            &&((dx!=+7&&dx!=-1&&dx!=-9)||(((Game->Coords&127)+i*dx)%8!=7))
+            )
     {
-        if (Game.Board[Game.y+i*dy][Game.x+i*dx]==TI) return 1;
-        if (Game.Board[Game.y+i*dy][Game.x+i*dx]==Game.Who) return i==1;
-        if (Game.Board[Game.y+i*dy][Game.x+i*dx]==P1+P2-Game.Who) i++;
+        if(Game->Disks&(Game->BitMask<<((Game->Coords&127)+i*dx)))
+        {
+            if(Game->Coords&128)
+            {
+                if(Game->Color&(Game->BitMask<<((Game->Coords&127)+i*dx)))
+                {
+                    for(char f=1;f<i;f++) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+f*dx));
+                    return i==1;
+                }
+                else i++;
+            }
+            else
+            {
+                if(Game->Color&(Game->BitMask<<((Game->Coords&127)+i*dx))) i++;
+                else
+                {
+                    for(char f=1;f<i;f++) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+f*dx));
+                    return i==1;
+                }
+            }
+        }
+        else return 1;
     }
     return 1;
 }
 
-char MoveLegalAll(struct Game Game)
+char ExeMove(struct Game *Game)
+//permettra de jouer un coup
 {
-    if (Game.Board[Game.y+0][Game.x+0]!=TI) return 1; // Tile not empty
-    if (MoveLegal(Game,+1,+0)==0) return 0; // Going FE
-    if (MoveLegal(Game,-1,+0)==0) return 0; // Going FW
-    if (MoveLegal(Game,+0,+1)==0) return 0; // Going FN
-    if (MoveLegal(Game,+0,-1)==0) return 0; // Going FS
-    if (MoveLegal(Game,+1,+1)==0) return 0; // Going NE
-    if (MoveLegal(Game,-1,-1)==0) return 0; // Going SW
-    if (MoveLegal(Game,-1,+1)==0) return 0; // Going NW
-    if (MoveLegal(Game,+1,-1)==0) return 0; // Going SE
-    return 1;
-}
-
-char MoveValid(struct Game Game)
-{
-    if (Game.x<0 || Game.x>7 || Game.y<0 || Game.y>7)
+    if(Game->Disks&(Game->BitMask<<(Game->Coords&127))) return 1;
+    char MoveLegal=1;
+    if(!FlipMove(Game,-7)) MoveLegal=0; // Going NE
+    if(!FlipMove(Game,-8)) MoveLegal=0; // Going FN
+    if(!FlipMove(Game,-9)) MoveLegal=0; // Going NW
+    if(!FlipMove(Game,-1)) MoveLegal=0; // Going FW
+    if(!FlipMove(Game,+7)) MoveLegal=0; // Going SW
+    if(!FlipMove(Game,+8)) MoveLegal=0; // Going FS
+    if(!FlipMove(Game,+9)) MoveLegal=0; // Going SE
+    if(!FlipMove(Game,+1)) MoveLegal=0; // Going FE
+    if(MoveLegal==0)
     {
-        printf(" - This is not even a move !");
-        return 1;
+        Game->Disks=Game->Disks|(Game->BitMask<<(Game->Coords&127));
+        if(Game->Coords&128) Game->Color=Game->Color|(Game->BitMask<<(Game->Coords&127));
     }
-    if (MoveLegalAll(Game))
-    {
-        printf(" - This move is illegal !");
-        return 1;
-    }
-    return 0;
+    return MoveLegal;
 }
 
-void ClearBuffer()
-{
-    for(char buf=0;buf!='\n';buf=buf)
-    {
-        if (scanf("%c",&buf)==EOF)
-        {
-            printf("\n[EOF]\n");
-            exit(3);
-        }
-    }
-    return;
-}
-
-void AskMove(struct Game *Game)
-{
-    char coords[3];
-    do
-    {
-        printf("\nPlayer %c, place a disk, using A1 - H8 format: ",Game->Who);
-        if (scanf("%2s",coords)==EOF)
-        {
-            printf("\n[EOF]\n");
-            exit(3);
-        }
-        else ClearBuffer(); // buffer destroyed
-        Game->x=coords[0]-'A'; // 'A' = 65
-        Game->y=coords[1]-'1'; // '1' = 49
-    } while (MoveValid(*Game));
-    return;
-}
-
-void FlipMove(struct Game *Game, char dx, char dy)
-{
-    char i=1;
-    while((Game->x+i<7 || dx!=1) && (Game->y+i<7 || dy!=1) && (Game->x>i || dx!=-1) && (Game->y>i || dy!=-1))
-    {
-        if (Game->Board[Game->y+i*dy][Game->x+i*dx]==Game->Who) return;
-        if (Game->Board[Game->y+i*dy][Game->x+i*dx]==P1+P2-Game->Who)
-        {
-            Game->Board[Game->y+i*dy][Game->x+i*dx]=Game->Who;
-            i++;
-        }
-    }
-    return;
-}
-
-void ExeMove(struct Game *Game)
-{
-    Game->Board[Game->y+0][Game->x+0]=Game->Who; // Placing disk
-    if (MoveLegal(*Game,-1,+0)==0) FlipMove(Game,-1,+0); // Going FW
-    if (MoveLegal(*Game,+1,+0)==0) FlipMove(Game,+1,+0); // Going FE
-    if (MoveLegal(*Game,+0,+1)==0) FlipMove(Game,+0,+1); // Going FS
-    if (MoveLegal(*Game,+0,-1)==0) FlipMove(Game,+0,-1); // Going FN
-    if (MoveLegal(*Game,+1,+1)==0) FlipMove(Game,+1,+1); // Going SE
-    if (MoveLegal(*Game,-1,-1)==0) FlipMove(Game,-1,-1); // Going NW
-    if (MoveLegal(*Game,-1,+1)==0) FlipMove(Game,-1,+1); // Going SW
-    if (MoveLegal(*Game,+1,-1)==0) FlipMove(Game,+1,-1); // Going NE
-    return;
-}
-
-char GameNotOver(struct Game *Game)
-{
-    for(char y=0;y<8;y++)
-    {
-        for(char x=0;x<8;x++)
-        {
-            Game->x=x;
-            Game->y=y;
-            if (!MoveLegalAll(*Game)) return 1;
-        }
-    }
-    Game->Who=P1+P2-Game->Who;
-    for(char y=0;y<8;y++)
-    {
-        for(char x=0;x<8;x++)
-        {
-            Game->x=x;
-            Game->y=y;
-            if (!MoveLegalAll(*Game)) return 1;
-        }
-    }
-    return 0;
-}
-
-void BoardCopy(char BoardS[8][8], char BoardD[8][8])
-{
-    for(char y=0;y<8;y++)
-    {
-        for(char x=0;x<8;x++)
-        {
-            BoardD[y+0][x+0]=BoardS[y+0][x+0];
-        }
-    }
-    return;
-}
-
-char BotFinal(struct Game Game)
+char FinalEval(struct Game Game)
+//permettra d'évaluer une position quand la partie est terminée
 {
     char eval=0;
-    for(char y=0;y<8;y++)
+    for(char i=0;i<64;i++)
     {
-        for(char x=0;x<8;x++)
+        if(Game.Disks&(Game.BitMask<<i))
         {
-            if(Game.Board[y+0][x+0]==Game.Who) eval++;
-            if(Game.Board[y+0][x+0]==P1+P2-Game.Who) eval--;
+            if(Game.Coords&128)
+            {
+                if(Game.Color&(Game.BitMask<<i)) eval++;
+                else eval--;
+            }
+            else
+            {
+                if(Game.Color&(Game.BitMask<<i)) eval--;
+                else eval++;
+            }
         }
     }
     return eval;
@@ -216,260 +122,205 @@ char BotFinal(struct Game Game)
 
 char BotEval(struct Game Game)
 {
-    int tableau_force_référence[8][8]=
-    {{500,-150,30,10,10,30,-150,500},
-    {-150,-250,0,0,0,0,-250,-150},
-    {30,0,1,2,2,1,0,30},
-    {10,0,2,15,15,2,0,10},
-    {10,0,2,15,15,2,0,10},
-    {30,0,1,2,2,1,0,30},
-    {-150,-250,0,0,0,0,-250,-150},
-    {500,-150,30,10,10,30,-150,500}};
-
-    int coups_possibles_actuel=0;
-    int nb_pions_actuel=0;
-    int valeur_de_force_actuel=0;
-    int coups_possibles_adverse=0;
-    int nb_pions_adverse=0;
-    int valeur_de_force_adverse=0;
-
-    //coins
-    int coins_actuel=((Game.Board[0][0]==Game.Who)*20)+((Game.Board[0][7]==Game.Who)*20)+((Game.Board[7][0]==Game.Who)*20)+((Game.Board[7][7]==Game.Who)*20);
-    Game.Who=P1+P2-Game.Who;
-    int coins_adverse=((Game.Board[0][0]==Game.Who)*20)+((Game.Board[0][7]==Game.Who)*20)+((Game.Board[7][0]==Game.Who)*20)+((Game.Board[7][7]==Game.Who)*20);
-    Game.Who=P1+P2-Game.Who;
-    
-    for(int j=0;j<8;j++)
+    char eval=0;
+    int TabForce[]=
     {
-        for(int i=0;i<8;i++)
+       600,-150,30 ,10 ,10 ,30 ,-150, 600,
+      -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
+       30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
+       10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
+       10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
+       30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
+      -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
+       600,-150,30 ,10 ,10 ,30 ,-150, 600
+    };
+    char YouCorners=0;
+    char AdvCorners=0;
+    char YouNumber=0;
+    char AdvNumber=0;
+    int force=0;
+    for(char i=0;i<64;i++)
+    {
+        if(Game.Disks&(Game.BitMask<<i))
         {
-            //---évaluation joueur actuel---
-            //nombre de pions
-            if (Game.Board[j][i]==Game.Who) nb_pions_actuel++;
-            //mobilité
-            Game.x=i;
-            Game.y=j;
-            if (MoveLegalAll(Game)==0) coups_possibles_actuel++;
-            //valeur de force
-            if (Game.Board[j][i]==Game.Who) valeur_de_force_actuel+=tableau_force_référence[j][i];
-
-            //---évaluation joueur adverse---
-            Game.Who=P1+P2-Game.Who;
-            //nombre de pions
-            if (Game.Board[j][i]==Game.Who) nb_pions_adverse++;
-            //mobilité
-            Game.x=i;
-            Game.y=j;
-            if (MoveLegalAll(Game)==0) coups_possibles_adverse++;
-            //valeur de force
-            if (Game.Board[j][i]==Game.Who) valeur_de_force_adverse+=tableau_force_référence[j][i];
-            Game.Who=P1+P2-Game.Who;
+            if(Game.Coords&128)
+            {
+                if(Game.Color&(Game.BitMask<<i))
+                {
+                    force+=TabForce[i+0];
+                    YouNumber++;
+                    if(i==0||i==7||i==56||i==63) YouCorners++;
+                }
+                else
+                {
+                    force-=TabForce[i+0];
+                    AdvNumber++;
+                    if(i==0||i==7||i==56||i==63) AdvCorners++;
+                }
+            }
+            else
+            {
+                if(Game.Color&(Game.BitMask<<i))
+                {
+                    force-=TabForce[i+0];
+                    AdvNumber++;
+                    if(i==0||i==7||i==56||i==63) AdvCorners++;
+                }
+                else
+                {
+                    force+=TabForce[i+0];
+                    YouNumber++;
+                    if(i==0||i==7||i==56||i==63) YouCorners++;
+                }
+            }
         }
     }
-
-    //--calcul de la fonction---
-    int score_pions, score_mobilité, score_coins, score_force,evaluation_plateau;
-    //score pions
-    score_pions=100*(nb_pions_actuel-nb_pions_adverse)/(nb_pions_actuel+nb_pions_adverse);
-    //score mobilité
-    if ((coups_possibles_actuel + coups_possibles_adverse)!=0)
-        {score_mobilité = 100*(coups_possibles_actuel - coups_possibles_adverse)/(coups_possibles_actuel + coups_possibles_adverse);}
-    else score_mobilité = 0;
-    //score coins
-    if (coins_actuel + coins_adverse != 0) 
-        {score_coins = 100*(coins_actuel - coins_adverse)/(coins_actuel + coins_adverse);}
-    else score_coins = 0;
-    //score force
-    score_force = (valeur_de_force_actuel - valeur_de_force_adverse)/46;
-
-    assert(score_pions<=100);
-    assert(score_pions>=-100);
-    assert(score_mobilité<=100);
-    assert(score_mobilité>=-100);
-    assert(score_coins<=100);
-    assert(score_coins>=-100);
-    assert(score_force<=100);
-    assert(score_force>=-100);
-
-    //---calcul pondéré---
-    //début de partie, 12 premiers tous
-    if (Game.tour<12) evaluation_plateau=0.8*score_mobilité+0.2*score_force;
-    //milieu de partie
-    if (Game.tour>=12 && Game.tour<60-MaxDepth) evaluation_plateau=0.4*score_mobilité+0.4*score_force+0.2*score_coins;
-    //fin de partie
-    if (Game.tour>=60-MaxDepth) evaluation_plateau=0.1*score_coins+0.1*score_force+0.1*score_mobilité+0.7*score_pions;
-
-    assert(evaluation_plateau>=-100 && evaluation_plateau<=100);
-    return evaluation_plateau;
+    eval=
+        (
+        (50*((YouCorners+AdvCorners==0)?0:((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
+        (20*((YouNumber+AdvNumber==0)?0:((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
+        (30*(force/50))
+        )/100;
+    assert(eval<100 && eval >-100);
+    return eval;
 }
 
-char GrowTree(struct Game Game, char depth)
+char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
+//Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
 {
     if (depth<1) return BotEval(Game);
     char MaxEval=-Infinity;
     char NewEval=0;
-    char BoardSave[8][8];
-    BoardCopy(Game.Board,BoardSave);
-    Game.Who=P1+P2-Game.Who;
-    for(char y=0;y<8;y++)
+    unsigned long int SaveDisks=Game.Disks; //sauvegardes
+    unsigned long int SaveColor=Game.Color;
+    for(Game.Coords=~(Game.Coords|127);!(Game.Coords&64);Game.Coords++)
     {
-        for(char x=0;x<8;x++)
+        if(!ExeMove(&Game)) //on teste si le coup est possible
         {
-            Game.x=x;
-            Game.y=y;
-            if (!MoveLegalAll(Game))
-            {
-                ExeMove(&Game);
-                NewEval=GrowTree(Game,depth-1);
-                if (MaxEval < NewEval) MaxEval=NewEval;
-                BoardCopy(BoardSave,Game.Board);
-            }
+            NewEval=GrowTree(Game,depth-1,-CutEval,-TopEval);
+            assert(NewEval!=Infinity);
+            assert(NewEval!=-Infinity);
+            if(CutEval<=NewEval) return -NewEval; //On coupe la branche actuelle
+            if(TopEval<NewEval) TopEval=NewEval; //On vient de couper une branche
+            if(MaxEval<NewEval) MaxEval=NewEval; //On a trouvé un meilleur coup, mais pas de coupe supplémentaire
+            Game.Disks=SaveDisks; //On annule le coup joué
+            Game.Color=SaveColor;
         }
     }
-    if (MaxEval!=-Infinity) return -MaxEval;
-    Game.Who=P1+P2-Game.Who;
-    for(char y=0;y<8;y++)
+    if(MaxEval!=-Infinity) return -MaxEval; //si on a trouvé une valeur max pour le joueur adverse on la retourne
+    for(Game.Coords=Game.Coords^192;!(Game.Coords&64);Game.Coords++)
     {
-        for(char x=0;x<8;x++)
+        if(!ExeMove(&Game)) //cette fois on regarde les coups du joueur actuel
         {
-            Game.x=x;
-            Game.y=y;
-            if (!MoveLegalAll(Game))
-            {
-                ExeMove(&Game);
-                NewEval=GrowTree(Game,depth-1);
-                if (MaxEval < NewEval) MaxEval=NewEval;
-                BoardCopy(BoardSave,Game.Board);
-            }
+            NewEval=GrowTree(Game,depth-1,TopEval,CutEval);
+            assert(NewEval!=Infinity);
+            assert(NewEval!=-Infinity);
+            if(TopEval<NewEval) TopEval=NewEval;
+            if(MaxEval<NewEval) MaxEval=NewEval;
+            Game.Disks=SaveDisks;
+            Game.Color=SaveColor;
         }
     }
-    if (MaxEval!=-Infinity) return MaxEval;
-    NewEval=BotFinal(Game);
-    if (NewEval < 0) return -EvalWin;
-    if (NewEval > 0) return EvalWin;
+    if(MaxEval!=-Infinity) return MaxEval;
+    NewEval=FinalEval(Game);
+    if (NewEval<0) return -EvalWin;
+    if (NewEval>0) return EvalWin;
     return 0;
 }
 
-void BotMove(struct Game *Game)
+char BotMove(struct Game *Game)
 {
-    printf("\n Bot %c thinking...\n",Game->Who);
+    printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
     char MaxEval=-Infinity;
     char NewEval=0;
-    char BoardSave[8][8];
-    BoardCopy(Game->Board,BoardSave);
-    char BestX=9,BestY=9;
-    for(char y=0;y<8;y++)
+    unsigned long int SaveDisks=Game->Disks;
+    unsigned long int SaveColor=Game->Color;
+    char BestMove=64;
+    for(Game->Coords=Game->Coords&128;!(Game->Coords&64);Game->Coords++)
     {
-        for(char x=0;x<8;x++)
+        if(!ExeMove(Game))
         {
-            Game->x=x;
-            Game->y=y;
-            if (!MoveLegalAll(*Game))
+            NewEval=GrowTree(*Game,MaxDepth,-Infinity,Infinity);
+            assert(NewEval!=Infinity);
+            assert(NewEval!=-Infinity);
+            if(MaxEval<NewEval||((MaxEval==NewEval)&&(0b11!=(0b11&rand()))))
             {
-                ExeMove(Game);
-                NewEval=GrowTree(*Game,MaxDepth);
-                if (MaxEval < NewEval)
-                {
-                    MaxEval = NewEval;
-                    BestX=x;
-                    BestY=y;
-                }
-                BoardCopy(BoardSave,Game->Board);
+                MaxEval=NewEval;
+                BestMove=Game->Coords;
             }
+            Game->Disks=SaveDisks;
+            Game->Color=SaveColor;
         }
     }
-    printf(" Bot %c played: %c%c (eval %i)\n",Game->Who,BestX+'A',BestY+'1',MaxEval);
-    Game->x=BestX;
-    Game->y=BestY;
+    if(BestMove==64)
+    {
+        printf(" Uh oh ! Bot %c couldn't find any moves !\n",Game->Coords&128?'X':'O');
+        return 1;
+    }
+    printf(" Bot %c played: %c%c (eval %i)\n",Game->Coords&128?'X':'O',((BestMove&127)%8)+'A',((BestMove&127)/8)+'1',MaxEval);
+    Game->Coords=BestMove;
     ExeMove(Game);
+    return 0;
+}
+
+char GameOver(struct Game Game)
+{
+    for(Game.Coords=Game.Coords&128;!(Game.Coords&64);Game.Coords++) if(!ExeMove(&Game)) return 0;
+    printf("Seems like player %c can't play...\n",Game.Coords&128?'X':'O');
+    for(Game.Coords=Game.Coords^192;!(Game.Coords&64);Game.Coords++) if(!ExeMove(&Game)) return 0;
+    printf("Seems like player %c can't play either !\n",Game.Coords&128?'X':'O');
+    return 1;
+}
+
+void Score(struct Game Game)
+{
+    PrintBoard(Game);
+    char Disk1=0,Disk2=0,Empty=0;
+    for(char i=0;i<64;i++)
+    {
+        if(Game.Disks&(Game.BitMask<<i))
+        {
+            if(Game.Color&(Game.BitMask<<i)) Disk1++;
+            else Disk2++;
+        }
+        else Empty++;
+    }
+    if (Disk1<Disk2) Disk2+=Empty;
+    if (Disk2<Disk1) Disk1+=Empty;
+    printf("Game finished, score: %i-%i\n",Disk1,Disk2);
     return;
 }
 
-void ia_primitive(struct Game *Game)
+int Whymain()
 {
-    printf("\n-----IA PRIMITIVE-----\n");
-    printf("Joueur : %c\n",Game->Who);
-    struct Game current_game=*Game;
-    int nb_coups_possibles=0;
-    char tab_lettres[]={'A','B','C','D','E','F','G','H'};
-    char tab_chiffres[]={'1','2','3','4','5','6','7','8'};
-    //on détermine le nombre de coups possibles
-    for(int j=0;j<8;j++)
-    {
-        for(int i=0;i<8;i++)
-        {
-            current_game.x=i;
-            current_game.y=j;
-            if (MoveLegalAll(current_game)==0) nb_coups_possibles++;
-        }
-    }
-    //on enregistre les coups possible
-    char coups_possibles[nb_coups_possibles][3];
-    char coups_possibles_3[nb_coups_possibles][3];
-    int index=0;
-    for(int j=0;j<8;j++)
-    {
-        for(int i=0;i<8;i++)
-        {
-            current_game.x=i;
-            current_game.y=j;
-            if (MoveLegalAll(current_game)==0)
-            {
-                coups_possibles[index][0]=tab_lettres[i];
-                coups_possibles[index][1]=tab_chiffres[j];
-                coups_possibles_3[index][0]=i;
-                coups_possibles_3[index][1]=j;
-                //printf("%c %c\n",tab_lettres[i],tab_chiffres[j]);
-                index++;
-            }
-        }
-    }
-    //on range tout ça dans un tableau
-    char coups_possibles_2[nb_coups_possibles][3];
-    printf("Coups possibles : ");
-    for(int j=0;j<nb_coups_possibles;j++)
-    {
-
-        memcpy(coups_possibles_2[j], coups_possibles[j], 2);
-        coups_possibles_2[j][2] = '\0'; 
-        printf("%s ",coups_possibles_2[j]);
-    }
-    printf("\n");
-    //on en choisit un au hasard
+    printf("\nWelcome to our playable version of Reversi !\n");
+    struct Game Game={0,0,0,128};
+    Game.BitMask=1;
+    Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
+    Game.Color=Game.Color&~(Game.BitMask<<(3*8+3));
+    Game.Disks=Game.Disks| (Game.BitMask<<(3*8+4));
+    Game.Color=Game.Color| (Game.BitMask<<(3*8+4));
+    Game.Disks=Game.Disks| (Game.BitMask<<(4*8+3));
+    Game.Color=Game.Color| (Game.BitMask<<(4*8+3));
+    Game.Disks=Game.Disks| (Game.BitMask<<(4*8+4));
+    Game.Color=Game.Color&~(Game.BitMask<<(4*8+4));
     srand(time(NULL));
-    int nbr_aleat = rand()%nb_coups_possibles;
-    printf("Coup choisi : %s\n",coups_possibles_2[nbr_aleat]);
-    Game->x=coups_possibles_3[nbr_aleat][0];
-    Game->y=coups_possibles_3[nbr_aleat][1];
-    //sleep(1);
-    return;
+    while(!GameOver(Game))
+    {
+        PrintBoard(Game);
+        BotMove(&Game);
+        Game.Coords=Game.Coords^128;
+    }
+    Score(Game);
+    return 0;
 }
 
 int main()
 {
-    printf("\nWelcome to our playable version of Reversi !\n");
-    struct Game Game={StartBoard,0,0,P1,0};
-    Game.Board[3][3]=P2;
-    Game.Board[3][4]=P1; // 'O' = 79
-    Game.Board[4][3]=P1; // 'X' = 88
-    Game.Board[4][4]=P2;
-    while (GameNotOver(&Game))
+    while(1)
     {
-        PrintBoard(Game);
-        if ((Game.Who==P1 && ExistP1=='Y')||(Game.Who==P2 && ExistP2=='Y'))
-        {
-            AskMove(&Game);
-            ExeMove(&Game);
-        }
-        else if ((Game.Who==P1 && ExistP1=='P')||(Game.Who==P2 && ExistP2=='P'))
-        {
-            ia_primitive(&Game);
-            ExeMove(&Game);
-        }
-        else BotMove(&Game);
-        Game.Who=P1+P2-Game.Who;
-        Game.tour++;
+        Whymain();
+        printf(" GAME ENDED !\n An other one will start in 3s...\n");
+        sleep(3);
     }
-    Score(Game);
-    return 0;
 }
