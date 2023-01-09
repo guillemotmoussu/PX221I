@@ -4,11 +4,12 @@
 #include <assert.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "userNetwork.h"
 
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 7
+#define MaxDepth 8
 
 struct Game
 {
@@ -416,6 +417,7 @@ int main()
 	Score(Game); //Afficher score
 	freeGameOthello(Server_Game);
     printf("Parties: %i, Victoires: %i\n", i, Wins);
+    sleep(1);
     }
     return 0;
 }
