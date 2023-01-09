@@ -265,7 +265,7 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
  */
 char BotMove(struct Game *Game)
 {
-    //printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
+    printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
     char MaxEval=-Infinity;
     char NewEval=0;
     unsigned long int SaveDisks=Game->Disks;
