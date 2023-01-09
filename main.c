@@ -341,7 +341,7 @@ void Score(struct Game Game)
 
 int main()
 {
-    for(int i=0;i<=10;i++)
+    for(int i=0;i<=200;i++)
     {
         printf("Started Game n°%i\n",i+1);
     struct Game Game={0,0,0,128};
@@ -362,7 +362,7 @@ int main()
 	Server_Game = allocateGameOthello();
 	Server_Game->userId=5;
 	Server_Game->address="192.168.130.9";
-	Server_Game->port = 8011;
+	Server_Game->port = 8010;
 
 	if (registerGameOthello(Server_Game, "KZB46g") < 0)
 	{exit(-1);} // test de l'authentification auprès du serveur
