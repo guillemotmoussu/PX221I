@@ -199,9 +199,9 @@ char BotEval(struct Game Game)
     }
     eval=
         (
-        (30*((YouCorners+AdvCorners==0)?0:100*((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
-        (20*((YouNumber+AdvNumber==0)?0:100*((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
-        (50*((YouForce+AdvForce==0)?0:100*((YouForce-AdvForce)/(YouForce+AdvForce))))
+        (20*((YouCorners+AdvCorners==0)?0:100*((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
+        (50*((YouNumber+AdvNumber==0)?0:100*((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
+        (30*((YouForce+AdvForce==0)?0:100*((YouForce-AdvForce)/(YouForce+AdvForce))))
         )/100;
     if(eval<-100) eval=-100;
     if(eval>100) eval=100;
