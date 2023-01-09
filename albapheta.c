@@ -206,14 +206,14 @@ char BotEval(struct Game Game)
         )/100;
     assert(IntEval<100 && IntEval >-100);
     eval=IntEval;
-    ///*
+    /*
     printf("Corners %d %d\n",YouCorners, AdvCorners);
     printf("Number %d %d\n",YouNumber, AdvNumber);
     printf("Force %d\n",force);
     printf("ForceCalc %d\n",ForceCalc(force));
     printf("IntEval %d\n",IntEval);
     printf("Eval %d\n",eval);
-    //*/
+    */
     return eval;
 }
 

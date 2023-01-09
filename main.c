@@ -146,20 +146,21 @@ char BotEval(struct Game Game)
     char eval=0;
     int TabForce[]=
     {
-       600,-150,30 ,10 ,10 ,30 ,-150, 600,
-      -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
+       600,  0 ,30 ,10 ,10 ,30 ,  0 , 600,
+        0 ,  0 , 0 , 0 , 0 , 0 ,  0 ,  0 ,
        30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
        10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
        10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
        30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
-      -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
-       600,-150,30 ,10 ,10 ,30 ,-150, 600
+        0 ,  0 , 0 , 0 , 0 , 0 ,  0 ,  0 ,
+       600,  0 ,30 ,10 ,10 ,30 ,  0 , 600
     };
     char YouCorners=0;
     char AdvCorners=0;
     char YouNumber=0;
     char AdvNumber=0;
-    int force=0;
+    int YouForce=0;
+    int AdvForce=0;
     for(char i=0;i<64;i++)
     {
         if(Game.Disks&(Game.BitMask<<i))
@@ -168,13 +169,13 @@ char BotEval(struct Game Game)
             {
                 if(Game.Color&(Game.BitMask<<i))
                 {
-                    force+=TabForce[i+0];
+                    YouForce+=TabForce[i+0];
                     YouNumber++;
                     if(i==0||i==7||i==56||i==63) YouCorners++;
                 }
                 else
                 {
-                    force-=TabForce[i+0];
+                    AdvForce+=TabForce[i+0];
                     AdvNumber++;
                     if(i==0||i==7||i==56||i==63) AdvCorners++;
                 }
@@ -183,13 +184,13 @@ char BotEval(struct Game Game)
             {
                 if(Game.Color&(Game.BitMask<<i))
                 {
-                    force-=TabForce[i+0];
+                    AdvForce+=TabForce[i+0];
                     AdvNumber++;
                     if(i==0||i==7||i==56||i==63) AdvCorners++;
                 }
                 else
                 {
-                    force+=TabForce[i+0];
+                    YouForce+=TabForce[i+0];
                     YouNumber++;
                     if(i==0||i==7||i==56||i==63) YouCorners++;
                 }
@@ -200,9 +201,10 @@ char BotEval(struct Game Game)
         (
         (30*((YouCorners+AdvCorners==0)?0:100*((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
         (20*((YouNumber+AdvNumber==0)?0:100*((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
-        (50*(force/50))
+        (50*((YouForce+AdvForce==0)?0:100*((YouForce-AdvForce)/(YouForce+AdvForce))/50))
         )/100;
-    assert(eval<100 && eval >-100);
+    if(eval<-100) eval=-100;
+    if(eval>100) eval=100;
     return eval;
 }
 
@@ -357,7 +359,7 @@ int main()
 	Server_Game = allocateGameOthello();
 	Server_Game->userId=5;
 	Server_Game->address="192.168.130.9";
-	Server_Game->port = 8010;
+	Server_Game->port = 8011;
 
 	if (registerGameOthello(Server_Game, "KZB46g") < 0)
 	{exit(-1);} // test de l'authentification auprès du serveur
