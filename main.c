@@ -265,7 +265,7 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
  */
 char BotMove(struct Game *Game)
 {
-    printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
+    printf("Our bot %c is thinking...\n",Game->Coords&128?'X':'O');
     char MaxEval=-Infinity;
     char NewEval=0;
     unsigned long int SaveDisks=Game->Disks;
@@ -378,6 +378,7 @@ int main()
 
 		if (Server_Game->myColor != Server_Game->currentPlayer)
 		{ // attente du coup de l'adversaire
+        printf("Distant bot %c is thinking...\n",(Server_Game->myColor==0)?'X':'O');
 			if (waitMoveOthello(Server_Game) == 0)
 			{
 				printf("Game status %d: \t", Server_Game->state);
