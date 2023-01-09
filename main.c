@@ -343,7 +343,7 @@ int main()
 {
     for(int i=0;i<=10;i++)
     {
-        printf("Started Game n°%i",i);
+        printf("Started Game n°%i\n",i+1);
     struct Game Game={0,0,0,128};
     Game.BitMask=1;
     Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
@@ -413,7 +413,6 @@ int main()
 	printf("Final game status = %d\n", Server_Game->state);
 	Score(Game); //Afficher score
 	freeGameOthello(Server_Game);
-
-    return 0;
     }
+    return 0;
 }
