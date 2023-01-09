@@ -142,24 +142,24 @@ int ForceCalc(int force)
 
 char BotEval(struct Game Game)
 {
-    int IntEval=0;
     char eval=0;
     int TabForce[]=
     {
-       600,-150,30 ,10 ,10 ,30 ,-150, 600,
-      -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
+       600,  0 ,30 ,10 ,10 ,30 ,  0 , 600,
+        0 ,  0 , 0 , 0 , 0 , 0 ,  0 ,  0 ,
        30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
        10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
        10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
        30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
-      -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
-       600,-150,30 ,10 ,10 ,30 ,-150, 600
+        0 ,  0 , 0 , 0 , 0 , 0 ,  0 ,  0 ,
+       600,  0 ,30 ,10 ,10 ,30 ,  0 , 600
     };
     int YouCorners=0;
     int AdvCorners=0;
     int YouNumber=0;
     int AdvNumber=0;
-    int force=0;
+    int YouForce=0;
+    int AdvForce=0;
     for(char i=0;i<64;i++)
     {
         if(Game.Disks&(Game.BitMask<<i))
@@ -168,13 +168,13 @@ char BotEval(struct Game Game)
             {
                 if(Game.Color&(Game.BitMask<<i))
                 {
-                    force+=TabForce[i+0];
+                    YouForce+=TabForce[i+0];
                     YouNumber++;
                     if(i==0||i==7||i==56||i==63) YouCorners++;
                 }
                 else
                 {
-                    force-=TabForce[i+0];
+                    AdvForce+=TabForce[i+0];
                     AdvNumber++;
                     if(i==0||i==7||i==56||i==63) AdvCorners++;
                 }
@@ -183,37 +183,27 @@ char BotEval(struct Game Game)
             {
                 if(Game.Color&(Game.BitMask<<i))
                 {
-                    force-=TabForce[i+0];
+                    AdvForce+=TabForce[i+0];
                     AdvNumber++;
                     if(i==0||i==7||i==56||i==63) AdvCorners++;
                 }
                 else
                 {
-                    force+=TabForce[i+0];
+                    YouForce+=TabForce[i+0];
                     YouNumber++;
                     if(i==0||i==7||i==56||i==63) YouCorners++;
                 }
             }
         }
     }
-    if (force>1000) force=1000;
-    if (force<-1000) force=-1000;
-    IntEval=
+    eval=
         (
-        (50*((YouCorners+AdvCorners==0)?0:100*((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
-        (20*((YouNumber+AdvNumber==0)?0:100*((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
-        (30*(force/10))
+        (20*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
+        (30*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
+        (50*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
         )/100;
-    assert(IntEval<100 && IntEval >-100);
-    eval=IntEval;
-    /*
-    printf("Corners %d %d\n",YouCorners, AdvCorners);
-    printf("Number %d %d\n",YouNumber, AdvNumber);
-    printf("Force %d\n",force);
-    printf("ForceCalc %d\n",ForceCalc(force));
-    printf("IntEval %d\n",IntEval);
-    printf("Eval %d\n",eval);
-    */
+    if(eval<-100) eval=-100;
+    if(eval>100) eval=100;
     return eval;
 }
 
