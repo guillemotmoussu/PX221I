@@ -9,7 +9,7 @@
 
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 8
+#define MaxDepth 7
 
 struct Game
 {
