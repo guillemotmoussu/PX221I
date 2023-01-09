@@ -3,13 +3,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 #include "userNetwork.h"
 
 #define Infinity 120
 #define EvalWin 110
 #define MaxDepth 7
-#define ExistP1 0 //utile ?
-#define ExistP2 0 //utile ?
 
 struct Game
 {
@@ -291,12 +290,12 @@ char BotMove(struct Game *Game)
     if(BestMove==64)
     {
         printf(" Uh oh ! Bot %c couldn't find any moves !\n",Game->Coords&128?'X':'O');
-        return 1;
+        return BestMove;
     }
     printf(" Bot %c played: %c%c (eval %i)\n",Game->Coords&128?'X':'O',((BestMove&127)%8)+'A',((BestMove&127)/8)+'1',MaxEval);
     Game->Coords=BestMove;
     ExeMove(Game);
-    return 0;
+    return (BestMove&63);
 }
 
 /**
@@ -305,7 +304,7 @@ char BotMove(struct Game *Game)
  * @param Game 
  * @return char 
  */
-char GameOver(struct Game Game) //toujours utile ?
+char GameOver(struct Game Game)
 {
     for(Game.Coords=Game.Coords&128;!(Game.Coords&64);Game.Coords++) if(!ExeMove(&Game)) return 0;
     printf("Seems like player %c can't play...\n",Game.Coords&128?'X':'O');
@@ -351,15 +350,16 @@ int main()
     Game.Disks=Game.Disks| (Game.BitMask<<(4*8+4));
     Game.Color=Game.Color&~(Game.BitMask<<(4*8+4));
     
+    srand(time(NULL));
+
     game *Server_Game;
-	int move; //utile ?
 
 	Server_Game = allocateGameOthello();
-	Server_Game->userId=9;
-	Server_Game->address="192.168.132.18";
-	Server_Game->port = 8080;
+	Server_Game->userId=5;
+	Server_Game->address="192.168.130.9";
+	Server_Game->port = 8010;
 
-	if (registerGameOthello(Server_Game, "binome9") < 0)
+	if (registerGameOthello(Server_Game, "KZB46g") < 0)
 	{exit(-1);} // test de l'authentification auprès du serveur
 
 	if (startGameOthello(Server_Game) < 0)
@@ -369,7 +369,7 @@ int main()
 	}
 
 	printf("I am player %s\n",(Server_Game->myColor==0)?"black":"white"); 
-    Server_Game->myColor=Game.Coords^128; // sychroniser notre joueur avec celui attribué par le serveur
+//    Game.Coords=(Server_Game->myColor==0)?128:0; // synchroniser notre joueur avec celui attribué par le serveur
 
 	// debut de partie
 	while (Server_Game->state == PLAYING && !feof(stdin))
@@ -384,23 +384,19 @@ int main()
 				if (Server_Game->state == PLAYING)
 				{
 					printf("Received move from server %d (x=%d,y=%d)\n",Server_Game->move,Server_Game->move%8,Server_Game->move/8); 
-					//sauvegarder coup adversaire dans notre structure
+                    int move = Server_Game->move; //sauvegarder coup adversaire dans notre structure
+                    if (move != 64)
+                    {
+                        Game.Coords=(Game.Coords&128)+move;
+                        ExeMove(&Game);
+                    }
 				}
 			}
 		}
 		else
 		{
-			Server_Game->move = 65; // si botmove correct cette valeur est modifiée, sinon cela terminera la partie.
-            // /!\ qu'en est-il si on ne peut pas jouer ?
-			BotMove(&Game); //Jouer notre coup 
-            //sauvegarder notre coup dans la structure du serveur
-
-			/*
-			printf("Enter your move:\n");
-			scanf("%d",&(g->move)); 
-			printf("playing move %d (x=%d,y=%d)\n",g->move,g->move%8,g->move/8);
-			*/
-
+			Server_Game->move = 65; //Si botmove correct cette valeur est modifiée, sinon cela terminera la partie.
+			Server_Game->move = BotMove(&Game); //Jouer notre coup et le sauvegarder notre coup dans la structure du serveur
 			doMoveOthello(Server_Game);
 		}
         Game.Coords=Game.Coords^128;
@@ -414,11 +410,3 @@ int main()
 
     return 0;
 }
-
-/*
-Reste à faire :
-- sychroniser notre joueur avec celui attribué par le serveur -> ok ?
-- sauvegarder coup adversaire dans notre structure
-- sauvegarder notre coup dans la structure du serveur
-- solution pour passer son tour
-*/
