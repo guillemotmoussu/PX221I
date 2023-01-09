@@ -378,7 +378,7 @@ int main()
 
 		if (Server_Game->myColor != Server_Game->currentPlayer)
 		{ // attente du coup de l'adversaire
-        printf("Distant bot %c is thinking...\n",(Server_Game->myColor==0)?'X':'O');
+        printf("Distant bot %c is thinking...\n",(Server_Game->myColor)?'X':'O');
 			if (waitMoveOthello(Server_Game) == 0)
 			{
 				printf("Game status %d: \t", Server_Game->state);
