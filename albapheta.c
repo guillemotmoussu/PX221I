@@ -120,8 +120,29 @@ char FinalEval(struct Game Game)
     return eval;
 }
 
+int ForceCalc(int force)
+{
+    int Newforce=0;
+    if(force>0)
+    {
+        if(force<1000) Newforce=force*3;
+        else if(force<2000) Newforce=3000+(force-1000);
+        else if(force<3000) Newforce=4000+(force-2000)/2;
+        else Newforce=4500+(force-3000)/4;
+    }
+    if(force<0)
+    {
+        if(force>-1000) Newforce=force*3;
+        else if(force>-2000) Newforce=-3000+(force+1000);
+        else if(force>-3000) Newforce=-4000+(force+2000)/2;
+        else Newforce=-4500+(force+3000)/4;
+    }
+    return Newforce;
+}
+
 char BotEval(struct Game Game)
 {
+    int IntEval=0;
     char eval=0;
     int TabForce[]=
     {
@@ -134,10 +155,10 @@ char BotEval(struct Game Game)
       -150,-250, 0 , 0 , 0 , 0 ,-250,-150,
        600,-150,30 ,10 ,10 ,30 ,-150, 600
     };
-    char YouCorners=0;
-    char AdvCorners=0;
-    char YouNumber=0;
-    char AdvNumber=0;
+    int YouCorners=0;
+    int AdvCorners=0;
+    int YouNumber=0;
+    int AdvNumber=0;
     int force=0;
     for(char i=0;i<64;i++)
     {
@@ -175,13 +196,24 @@ char BotEval(struct Game Game)
             }
         }
     }
-    eval=
+    if (force>1000) force=1000;
+    if (force<-1000) force=-1000;
+    IntEval=
         (
-        (50*((YouCorners+AdvCorners==0)?0:((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
-        (20*((YouNumber+AdvNumber==0)?0:((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
-        (30*(force/50))
+        (50*((YouCorners+AdvCorners==0)?0:100*((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
+        (20*((YouNumber+AdvNumber==0)?0:100*((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
+        (30*(force/10))
         )/100;
-    assert(eval<100 && eval >-100);
+    assert(IntEval<100 && IntEval >-100);
+    eval=IntEval;
+    ///*
+    printf("Corners %d %d\n",YouCorners, AdvCorners);
+    printf("Number %d %d\n",YouNumber, AdvNumber);
+    printf("Force %d\n",force);
+    printf("ForceCalc %d\n",ForceCalc(force));
+    printf("IntEval %d\n",IntEval);
+    printf("Eval %d\n",eval);
+    //*/
     return eval;
 }
 

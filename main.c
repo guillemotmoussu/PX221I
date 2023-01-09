@@ -8,7 +8,7 @@
 
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 6
+#define MaxDepth 7
 
 struct Game
 {
@@ -198,8 +198,8 @@ char BotEval(struct Game Game)
     }
     eval=
         (
-        (30*((YouCorners+AdvCorners==0)?0:((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
-        (20*((YouNumber+AdvNumber==0)?0:((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
+        (30*((YouCorners+AdvCorners==0)?0:100*((YouCorners-AdvCorners)/(YouCorners+AdvCorners))))+
+        (20*((YouNumber+AdvNumber==0)?0:100*((YouNumber-AdvNumber)/(YouNumber+AdvNumber))))+
         (50*(force/50))
         )/100;
     assert(eval<100 && eval >-100);
