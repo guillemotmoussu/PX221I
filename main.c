@@ -415,7 +415,7 @@ int main()
     if(Server_Game->state==3) Wins++;
 	Score(Game); //Afficher score
 	freeGameOthello(Server_Game);
-    printf("Parties: %i, Victoires: %i", i, Wins);
+    printf("Parties: %i, Victoires: %i\n", i, Wins);
     }
     return 0;
 }
