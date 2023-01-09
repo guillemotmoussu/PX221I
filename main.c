@@ -341,6 +341,7 @@ void Score(struct Game Game)
 
 int main()
 {
+    int Wins=0;
     for(int i=0;i<=200;i++)
     {
         printf("Started Game n°%i\n",i+1);
@@ -411,8 +412,10 @@ int main()
 
 	// fin de partie
 	printf("Final game status = %d\n", Server_Game->state);
+    if(Server_Game->state==3) Wins++;
 	Score(Game); //Afficher score
 	freeGameOthello(Server_Game);
+    printf("Parties: %i, Victoires: %i", i, Wins);
     }
     return 0;
 }
