@@ -343,6 +343,7 @@ int main()
 {
     for(int i=0;i<=10;i++)
     {
+        printf("Started Game n°%i",i);
     struct Game Game={0,0,0,128};
     Game.BitMask=1;
     Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
