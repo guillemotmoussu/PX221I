@@ -341,6 +341,8 @@ void Score(struct Game Game)
 
 int main()
 {
+    for(int i=0;i<=10;i++)
+    {
     struct Game Game={0,0,0,128};
     Game.BitMask=1;
     Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
@@ -412,4 +414,5 @@ int main()
 	freeGameOthello(Server_Game);
 
     return 0;
+    }
 }
