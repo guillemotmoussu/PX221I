@@ -362,7 +362,7 @@ int main()
 	Server_Game = allocateGameOthello();
 	Server_Game->userId=5;
 	Server_Game->address="192.168.130.9";
-	Server_Game->port = 8012;
+	Server_Game->port = 8011;
 
 	if (registerGameOthello(Server_Game, "KZB46g") < 0)
 	{exit(-1);} // test de l'authentification auprès du serveur
