@@ -12,9 +12,11 @@
 
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 7
+#define MaxDepth 4
 #define ExistP1 0
 #define ExistP2 0
+
+int win;
 
 struct Game
 {
@@ -198,9 +200,76 @@ char BotEval(struct Game Game)
     }
     eval=
         (
+        (30*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
+        (10*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
+        (60*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
+        )/100;
+    if(eval<-100) eval=-100;
+    if(eval>100) eval=100;
+    return eval;
+}
+
+char BotEval2(struct Game Game)
+{
+    char eval=0;
+    int TabForce[]=
+    {
+       600,  0 ,30 ,10 ,10 ,30 ,  0 , 600,
+        0 ,  0 , 0 , 0 , 0 , 0 ,  0 ,  0 ,
+       30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
+       10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
+       10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
+       30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
+        0 ,  0 , 0 , 0 , 0 , 0 ,  0 ,  0 ,
+       600,  0 ,30 ,10 ,10 ,30 ,  0 , 600
+    };
+    int YouCorners=0;
+    int AdvCorners=0;
+    int YouNumber=0;
+    int AdvNumber=0;
+    int YouForce=0;
+    int AdvForce=0;
+    for(char i=0;i<64;i++)
+    {
+        if(Game.Disks&(Game.BitMask<<i))
+        {
+            if(Game.Coords&128)
+            {
+                if(Game.Color&(Game.BitMask<<i))
+                {
+                    YouForce+=TabForce[i+0];
+                    YouNumber++;
+                    if(i==0||i==7||i==56||i==63) YouCorners++;
+                }
+                else
+                {
+                    AdvForce+=TabForce[i+0];
+                    AdvNumber++;
+                    if(i==0||i==7||i==56||i==63) AdvCorners++;
+                }
+            }
+            else
+            {
+                if(Game.Color&(Game.BitMask<<i))
+                {
+                    AdvForce+=TabForce[i+0];
+                    AdvNumber++;
+                    if(i==0||i==7||i==56||i==63) AdvCorners++;
+                }
+                else
+                {
+                    YouForce+=TabForce[i+0];
+                    YouNumber++;
+                    if(i==0||i==7||i==56||i==63) YouCorners++;
+                }
+            }
+        }
+    }
+    eval=
+        (
         (20*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
-        (30*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
-        (50*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
+        (10*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
+        (70*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
         )/100;
     if(eval<-100) eval=-100;
     if(eval>100) eval=100;
@@ -210,7 +279,8 @@ char BotEval(struct Game Game)
 char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
 //Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
 {
-    if (depth<1) return BotEval(Game);
+    if(Game.Coords&128) {if (depth<1) return BotEval(Game);}
+    else {if (depth<1) return BotEval2(Game);}
     char MaxEval=-Infinity;
     char NewEval=0;
     unsigned long int SaveDisks=Game.Disks; //sauvegardes
@@ -252,7 +322,7 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
 
 char BotMove(struct Game *Game)
 {
-    printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
+    //printf(" Bot %c is thinking...\n",Game->Coords&128?'X':'O');
     char MaxEval=-Infinity;
     char NewEval=0;
     unsigned long int SaveDisks=Game->Disks;
@@ -276,10 +346,10 @@ char BotMove(struct Game *Game)
     }
     if(BestMove==64)
     {
-        printf(" Uh oh ! Bot %c couldn't find any moves !\n",Game->Coords&128?'X':'O');
+        //printf(" Uh oh ! Bot %c couldn't find any moves !\n",Game->Coords&128?'X':'O');
         return 1;
     }
-    printf(" Bot %c played: %c%c (eval %i)\n",Game->Coords&128?'X':'O',((BestMove&127)%8)+'A',((BestMove&127)/8)+'1',MaxEval);
+    //printf(" Bot %c played: %c%c (eval %i)\n",Game->Coords&128?'X':'O',((BestMove&127)%8)+'A',((BestMove&127)/8)+'1',MaxEval);
     Game->Coords=BestMove;
     ExeMove(Game);
     return 0;
@@ -288,9 +358,9 @@ char BotMove(struct Game *Game)
 char GameOver(struct Game Game)
 {
     for(Game.Coords=Game.Coords&128;!(Game.Coords&64);Game.Coords++) if(!ExeMove(&Game)) return 0;
-    printf("Seems like player %c can't play...\n",Game.Coords&128?'X':'O');
+    //printf("Seems like player %c can't play...\n",Game.Coords&128?'X':'O');
     for(Game.Coords=Game.Coords^192;!(Game.Coords&64);Game.Coords++) if(!ExeMove(&Game)) return 0;
-    printf("Seems like player %c can't play either !\n",Game.Coords&128?'X':'O');
+    //printf("Seems like player %c can't play either !\n",Game.Coords&128?'X':'O');
     return 1;
 }
 
@@ -310,12 +380,13 @@ void Score(struct Game Game)
     if (Disk1<Disk2) Disk2+=Empty;
     if (Disk2<Disk1) Disk1+=Empty;
     printf("Game finished, score: %i-%i\n",Disk1,Disk2);
+    if(Disk1<Disk2) win++;
     return;
 }
 
 int Whymain()
 {
-    printf("\nWelcome to our playable version of Reversi !\n");
+    //printf("\nWelcome to our playable version of Reversi !\n");
     struct Game Game={0,0,0,128};
     Game.BitMask=1;
     Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
@@ -329,7 +400,7 @@ int Whymain()
     srand(time(NULL));
     while(!GameOver(Game))
     {
-        PrintBoard(Game);
+        //PrintBoard(Game);
         BotMove(&Game);
         Game.Coords=Game.Coords^128;
     }
@@ -339,10 +410,11 @@ int Whymain()
 
 int main()
 {
-    while(1)
+    win = 0;
+    for(int i=0;i<=20;i++)
     {
         Whymain();
-        printf(" GAME ENDED !\n An other one will start in 3s...\n");
-        sleep(3);
+        printf("%d\n",i);
     }
+    printf("Wins : %d\n",win);
 }
