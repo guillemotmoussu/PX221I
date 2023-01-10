@@ -12,7 +12,7 @@
 
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 4
+#define MaxDepth 3
 #define ExistP1 0
 #define ExistP2 0
 
@@ -201,8 +201,8 @@ char BotEval(struct Game Game)
     eval=
         (
         (30*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
-        (10*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
-        (60*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
+        (20*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
+        (50*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
         )/100;
     if(eval<-100) eval=-100;
     if(eval>100) eval=100;
@@ -267,9 +267,9 @@ char BotEval2(struct Game Game)
     }
     eval=
         (
-        (20*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
-        (10*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
-        (70*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
+        (50*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
+        (0*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
+        (50*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
         )/100;
     if(eval<-100) eval=-100;
     if(eval>100) eval=100;
@@ -415,6 +415,7 @@ int main()
     {
         Whymain();
         printf("%d\n",i);
+        sleep(1);
     }
     printf("Wins : %d\n",win);
 }
