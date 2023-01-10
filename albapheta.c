@@ -12,7 +12,7 @@
 
 #define Infinity 120
 #define EvalWin 110
-#define MaxDepth 3
+#define MaxDepth 5
 #define ExistP1 0
 #define ExistP2 0
 
@@ -267,9 +267,9 @@ char BotEval2(struct Game Game)
     }
     eval=
         (
-        (40*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
+        (20*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
         (10*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
-        (50*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
+        (70*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
         )/100;
     if(eval<-100) eval=-100;
     if(eval>100) eval=100;
@@ -411,7 +411,7 @@ int Whymain()
 int main()
 {
     win = 0;
-    for(int i=1;i<=20;i++)
+    for(int i=1;i<=30;i++)
     {
         Whymain();
         printf("%d\n",i);
