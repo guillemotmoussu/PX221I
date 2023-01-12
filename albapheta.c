@@ -276,11 +276,14 @@ char BotEval2(struct Game Game)
     return eval;
 }
 
-char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
+char GrowTree(struct Game Game, char depth, char TopEval, char CutEval, char Black)
 //Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
 {
-    if(Game.Coords&128) {if (depth<1) return BotEval(Game);}
-    else {if (depth<1) return BotEval2(Game);}
+    if(depth<1)
+    {
+        if(Black) return BotEval(Game);
+        else return BotEval2(Game);
+    }
     char MaxEval=-Infinity;
     char NewEval=0;
     unsigned long int SaveDisks=Game.Disks; //sauvegardes
@@ -289,7 +292,7 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
     {
         if(!ExeMove(&Game)) //on teste si le coup est possible
         {
-            NewEval=GrowTree(Game,depth-1,-CutEval,-TopEval);
+            NewEval=GrowTree(Game,depth-1,-CutEval,-TopEval,Black);
             assert(NewEval!=Infinity);
             assert(NewEval!=-Infinity);
             if(CutEval<=NewEval) return -NewEval; //On coupe la branche actuelle
@@ -304,7 +307,7 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
     {
         if(!ExeMove(&Game)) //cette fois on regarde les coups du joueur actuel
         {
-            NewEval=GrowTree(Game,depth-1,TopEval,CutEval);
+            NewEval=GrowTree(Game,depth-1,TopEval,CutEval,Black);
             assert(NewEval!=Infinity);
             assert(NewEval!=-Infinity);
             if(TopEval<NewEval) TopEval=NewEval;
@@ -332,7 +335,7 @@ char BotMove(struct Game *Game)
     {
         if(!ExeMove(Game))
         {
-            NewEval=GrowTree(*Game,MaxDepth,-Infinity,Infinity);
+            NewEval=(Game->Coords&128)?GrowTree(*Game,MaxDepth,-Infinity,Infinity,1):GrowTree(*Game,MaxDepth,-Infinity,Infinity,0);
             assert(NewEval!=Infinity);
             assert(NewEval!=-Infinity);
             if(MaxEval<NewEval||((MaxEval==NewEval)&&(0b11!=(0b11&rand()))))
