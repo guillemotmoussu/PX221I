@@ -7,6 +7,11 @@
 #include <unistd.h>
 #include "userNetwork.h"
 
+#define IPADDRESS "127.0.0.1"
+#define PORT 8080
+#define USERID 5
+#define PASSWORD "binome5"
+
 #define Infinity 120
 #define EvalWin 110
 #define MaxDepth 7
@@ -16,13 +21,13 @@ struct Game
     unsigned long int Disks;        //Pions sur le plateau
     unsigned long int Color;        //Couleur sur le plateau
     unsigned long int BitMask;      //Sert à faire des opérations bit à bit
-    char Coords; //Stocke le joueur actif,  les erreurs, et les coordonnées à jouer
+    char Coords;                    //Stocke le joueur actif, les erreurs, et des coordonnées
 };
 
 /**
- * @brief Affiche le plateau dans la console
+ * @brief Affiche le plateau dans le terminal
  * 
- * @param Game 
+ * @param Game
  */
 void PrintBoard(struct Game Game)
 {
@@ -43,9 +48,9 @@ void PrintBoard(struct Game Game)
 /**
  * @brief Joue un coup sur le plateau
  * 
- * @param Game 
- * @param dx 
- * @return char 
+ * @param Game
+ * @param dx
+ * @return char
  */
 char FlipMove(struct Game *Game, char dx)
 {
@@ -85,8 +90,8 @@ char FlipMove(struct Game *Game, char dx)
 /**
  * @brief Permet de jouer un coup
  * 
- * @param Game 
- * @return char 
+ * @param Game
+ * @return char
  */
 char ExeMove(struct Game *Game)
 {
@@ -111,8 +116,8 @@ char ExeMove(struct Game *Game)
 /**
  * @brief Permet d'évaluer une position quand la partie est terminée
  * 
- * @param Game 
- * @return char 
+ * @param Game
+ * @return char
  */
 char FinalEval(struct Game Game)
 {
@@ -139,22 +144,22 @@ char FinalEval(struct Game Game)
 /**
  * @brief Fonction d'évaluation du plateau
  * 
- * @param Game 
- * @return char 
+ * @param Game
+ * @return char
  */
 char BotEval(struct Game Game)
 {
     char eval=0;
-    int TabForce[]=
+    static const int TabForce[]=
     {
-       600,  0 ,30 ,10 ,10 ,30 ,  0 , 600,
-        0 ,  0 , 0 , 0 , 0 , 0 ,  0 ,  0 ,
-       30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
-       10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
-       10 ,  0 , 2 ,15 ,15 , 2 ,  0 , 10 ,
-       30 ,  0 , 1 , 2 , 2 , 1 ,  0 , 30 ,
-        0 ,  0 , 0 , 0 , 0 , 0 ,  0 ,  0 ,
-       600,  0 ,30 ,10 ,10 ,30 ,  0 , 600
+         700,-30,30 ,10 ,10 ,30 ,-30,700,
+         -30,-40, 0 , 0 , 0 , 0 ,-40,-30,
+          30, 0 , 1 , 2 , 2 , 1 , 0 , 30,
+          10, 0 , 2 ,15 ,15 , 2 , 0 , 10,
+          10, 0 , 2 ,15 ,15 , 2 , 0 , 10,
+          30, 0 , 1 , 2 , 2 , 1 , 0 , 30,
+         -30,-40, 0 , 0 , 0 , 0 ,-40,-30,
+         700,-30,30 ,10 ,10 ,30 ,-30,700
     };
     int YouCorners=0;
     int AdvCorners=0;
@@ -198,25 +203,27 @@ char BotEval(struct Game Game)
             }
         }
     }
+    if(YouForce<0) YouForce=0;
+    if(AdvForce<0) AdvForce=0;
     eval=
         (
-        (30*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
-        (20*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
-        (50*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
+        (20*((YouCorners+AdvCorners==0)?0:((100*(YouCorners-AdvCorners))/(YouCorners+AdvCorners))))+
+        (10*((YouNumber+AdvNumber==0)?0:((100*(YouNumber-AdvNumber))/(YouNumber+AdvNumber))))+
+        (70*((YouForce+AdvForce==0)?0:((100*(YouForce-AdvForce))/(YouForce+AdvForce))))
         )/100;
-    if(eval<-100) eval=-100;
-    if(eval>100) eval=100;
+    if(eval<-100) eval=-80;
+    if(eval>100) eval=80;
     return eval;
 }
 
 /**
  * @brief Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
  * 
- * @param Game 
- * @param depth 
- * @param TopEval 
- * @param CutEval 
- * @return char 
+ * @param Game
+ * @param depth
+ * @param TopEval
+ * @param CutEval
+ * @return char
  */
 char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
 {
@@ -343,81 +350,74 @@ void Score(struct Game Game)
 int main()
 {
     int Wins=0;
-    for(int i=0;i<=200;i++)
+    for(int i=0;i<100;i++)
     {
-        printf("Started Game n°%i\n",i+1);
-    struct Game Game={0,0,0,128};
-    Game.BitMask=1;
-    Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
-    Game.Color=Game.Color&~(Game.BitMask<<(3*8+3));
-    Game.Disks=Game.Disks| (Game.BitMask<<(3*8+4));
-    Game.Color=Game.Color| (Game.BitMask<<(3*8+4));
-    Game.Disks=Game.Disks| (Game.BitMask<<(4*8+3));
-    Game.Color=Game.Color| (Game.BitMask<<(4*8+3));
-    Game.Disks=Game.Disks| (Game.BitMask<<(4*8+4));
-    Game.Color=Game.Color&~(Game.BitMask<<(4*8+4));
-    
-    srand(time(NULL));
+        printf("Starting Game n°%i\n",i+1);
+        struct Game Game={0,0,0,128};
+        Game.BitMask=1;
+        Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
+        Game.Color=Game.Color&~(Game.BitMask<<(3*8+3));
+        Game.Disks=Game.Disks| (Game.BitMask<<(3*8+4));
+        Game.Color=Game.Color| (Game.BitMask<<(3*8+4));
+        Game.Disks=Game.Disks| (Game.BitMask<<(4*8+3));
+        Game.Color=Game.Color| (Game.BitMask<<(4*8+3));
+        Game.Disks=Game.Disks| (Game.BitMask<<(4*8+4));
+        Game.Color=Game.Color&~(Game.BitMask<<(4*8+4));
+        srand(time(NULL));
 
-    game *Server_Game;
+        // Old server config: {IP: "192.168.130.9" - PT: 8010 - ID: 5 - PW: "KZB46g"}
+        game *Server_Game;
+        Server_Game = allocateGameOthello();
+        Server_Game->userId = USERID;
+        Server_Game->address = IPADDRESS;
+        Server_Game->port = PORT;
+        if (registerGameOthello(Server_Game,PASSWORD) < 0)
+        {exit(-1);} // test de l'authentification auprès du serveur
+        if (startGameOthello(Server_Game) < 0)
+        { // cet appel est bloquant en attendant un adversaire
+            printf("error Starting Game\n");
+            exit(-1);
+        }
 
-	Server_Game = allocateGameOthello();
-	Server_Game->userId=5;
-	Server_Game->address="192.168.130.9";
-	Server_Game->port = 8010;
-
-	if (registerGameOthello(Server_Game, "KZB46g") < 0)
-	{exit(-1);} // test de l'authentification auprès du serveur
-
-	if (startGameOthello(Server_Game) < 0)
-	{ // cet appel est bloquant en attendant un adversaire
-		printf("error Starting Game\n");
-		exit(-1);
-	}
-
-	printf("I am player %s\n",(Server_Game->myColor==0)?"black":"white"); 
-//    Game.Coords=(Server_Game->myColor==0)?128:0; // synchroniser notre joueur avec celui attribué par le serveur
-
-	// debut de partie
-	while (Server_Game->state == PLAYING && !feof(stdin))
-	{
-		PrintBoard(Game); //On affiche notre plateau
-
-		if (Server_Game->myColor != Server_Game->currentPlayer)
-		{ // attente du coup de l'adversaire
-        printf("Distant bot %c is thinking...\n",(Server_Game->myColor)?'X':'O');
-			if (waitMoveOthello(Server_Game) == 0)
-			{
-				printf("Game status %d: \t", Server_Game->state);
-				if (Server_Game->state == PLAYING)
-				{
-					printf("Received move from server %d (x=%d,y=%d)\n",Server_Game->move,Server_Game->move%8,Server_Game->move/8); 
-                    int move = Server_Game->move; //sauvegarder coup adversaire dans notre structure
-                    if (move != 64)
+        printf("I am player %s !\n",(Server_Game->myColor==0)?"black":"white");
+        // debut de partie
+        while (Server_Game->state == PLAYING && !feof(stdin))
+        {
+            PrintBoard(Game); //On affiche notre plateau
+            if (Server_Game->myColor != Server_Game->currentPlayer)
+            { // attente du coup de l'adversaire
+            printf("Distant bot %c is thinking...\n",(Server_Game->myColor)?'X':'O');
+                if (waitMoveOthello(Server_Game) == 0)
+                {
+                    printf("Game status %d: \t", Server_Game->state);
+                    if (Server_Game->state == PLAYING)
                     {
-                        Game.Coords=(Game.Coords&128)+move;
-                        ExeMove(&Game);
+                        printf("Received move from server %d (x=%d,y=%d)\n",Server_Game->move,Server_Game->move%8,Server_Game->move/8); 
+                        int move = Server_Game->move; //sauvegarder coup adversaire dans notre structure
+                        if (move != 64)
+                        {
+                            Game.Coords=(Game.Coords&128)+move;
+                            ExeMove(&Game);
+                        }
                     }
-				}
-			}
-		}
-		else
-		{
-			Server_Game->move = 65; //Si botmove correct cette valeur est modifiée, sinon cela terminera la partie.
-			Server_Game->move = BotMove(&Game); //Jouer notre coup et le sauvegarder notre coup dans la structure du serveur
-			doMoveOthello(Server_Game);
-		}
-        Game.Coords=Game.Coords^128;
-		Server_Game->currentPlayer = !(Server_Game->currentPlayer); // on change de joueur
-	}
-
-	// fin de partie
-	printf("Final game status = %d\n", Server_Game->state);
-    if(Server_Game->state==3) Wins++;
-	Score(Game); //Afficher score
-	freeGameOthello(Server_Game);
-    printf("Parties: %i, Victoires: %i\n", i, Wins);
-    sleep(1);
+                }
+            }
+            else
+            {
+                Server_Game->move = 65; //Si botmove correct cette valeur est modifiée, sinon cela terminera la partie.
+                Server_Game->move = BotMove(&Game); //Jouer notre coup et le sauvegarder notre coup dans la structure du serveur
+                doMoveOthello(Server_Game);
+            }
+            Game.Coords=Game.Coords^128;
+            Server_Game->currentPlayer = !(Server_Game->currentPlayer); // on change de joueur
+        }
+        // fin de partie
+        printf("Final game status = %d\n", Server_Game->state);
+        if(Server_Game->state==3) Wins++;
+        Score(Game); //Afficher score
+        freeGameOthello(Server_Game);
+        printf("Parties: %i, Victoires: %i\n", i+1, Wins);
+        sleep(3);
     }
     return 0;
 }
