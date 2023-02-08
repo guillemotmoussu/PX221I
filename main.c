@@ -11,21 +11,18 @@
 #define PORT 8080
 #define USERID 5
 #define PASSWORD "binome5"
-#define BitMaskass 0x0000000000000001
 
 //Variables de jeu
 #define Infinity 120
 #define EvalWin 110
 #define MaxDepth 7
-
-const unsigned long int BitMask=1;
+#define BitMask 0x1UL //Pour faire des opérations bit à bit dans le plateau
 
 struct Game
 {
-    unsigned long int Disks;            //Pions présents sur le plateau
-    unsigned long int Color;            //Couleur des pions présents
-    const unsigned long int BitMask;    //Sert à faire des opérations bit à bit
-    char Coords;                        //Stocke le joueur actif, les erreurs, et des coordonnées
+    unsigned long int Disks; //Pions présents sur le plateau
+    unsigned long int Color; //Couleur des pions présents
+    char Coords;             //Stocke le joueur actif, les erreurs, et des coordonnées
 };
 
 /**
@@ -34,14 +31,13 @@ struct Game
  */
 void PrintBoard(struct Game Game)
 {
-    const unsigned long int BitMask;
     printf("\n   # A B C D E F G H #\n");
     for(char y=0;y<8;y++)
     {
         printf("   %i",y+1);
         for(char x=0;x<8;x++)
         {
-            printf(" %c",!(Game.Disks&(Game.BitMask<<(y*8+x)))?'-':(Game.Color&(Game.BitMask<<(y*8+x))?'X':'O'));
+            printf(" %c",!(Game.Disks&(BitMask<<(y*8+x)))?'-':(Game.Color&(BitMask<<(y*8+x))?'X':'O'));
         }
         printf(" %i\n",y+1);
     }
@@ -64,23 +60,23 @@ char FlipMove(struct Game *Game, char dx)
             &&((dx!=+7&&dx!=-1&&dx!=-9)||(((Game->Coords&127)+i*dx)%8!=7))
             )
     {
-        if(Game->Disks&(Game->BitMask<<((Game->Coords&127)+i*dx)))
+        if(Game->Disks&(BitMask<<((Game->Coords&127)+i*dx)))
         {
             if(Game->Coords&128)
             {
-                if(Game->Color&(Game->BitMask<<((Game->Coords&127)+i*dx)))
+                if(Game->Color&(BitMask<<((Game->Coords&127)+i*dx)))
                 {
-                    for(char f=1;f<i;f++) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+f*dx));
+                    for(char f=1;f<i;f++) Game->Color=Game->Color^(BitMask<<((Game->Coords&127)+f*dx));
                     return i==1;
                 }
                 else i++;
             }
             else
             {
-                if(Game->Color&(Game->BitMask<<((Game->Coords&127)+i*dx))) i++;
+                if(Game->Color&(BitMask<<((Game->Coords&127)+i*dx))) i++;
                 else
                 {
-                    for(char f=1;f<i;f++) Game->Color=Game->Color^(Game->BitMask<<((Game->Coords&127)+f*dx));
+                    for(char f=1;f<i;f++) Game->Color=Game->Color^(BitMask<<((Game->Coords&127)+f*dx));
                     return i==1;
                 }
             }
@@ -97,8 +93,7 @@ char FlipMove(struct Game *Game, char dx)
  */
 char ExeMove(struct Game *Game)
 {
-    const unsigned long int BitMask;
-    if(Game->Disks&(Game->BitMask<<(Game->Coords&127))) return 1;
+    if(Game->Disks&(BitMask<<(Game->Coords&127))) return 1;
     char MoveLegal=1;
     if(!FlipMove(Game,-7)) MoveLegal=0; // Going NE
     if(!FlipMove(Game,-8)) MoveLegal=0; // Going FN
@@ -110,8 +105,8 @@ char ExeMove(struct Game *Game)
     if(!FlipMove(Game,+1)) MoveLegal=0; // Going FE
     if(MoveLegal==0)
     {
-        Game->Disks=Game->Disks|(Game->BitMask<<(Game->Coords&127));
-        if(Game->Coords&128) Game->Color=Game->Color|(Game->BitMask<<(Game->Coords&127));
+        Game->Disks=Game->Disks|(BitMask<<(Game->Coords&127));
+        if(Game->Coords&128) Game->Color=Game->Color|(BitMask<<(Game->Coords&127));
     }
     return MoveLegal;
 }
@@ -123,20 +118,19 @@ char ExeMove(struct Game *Game)
  */
 char FinalEval(struct Game Game)
 {
-    const unsigned long int BitMask;
     char eval=0;
     for(char i=0;i<64;i++)
     {
-        if(Game.Disks&(Game.BitMask<<i))
+        if(Game.Disks&(BitMask<<i))
         {
             if(Game.Coords&128)
             {
-                if(Game.Color&(Game.BitMask<<i)) eval++;
+                if(Game.Color&(BitMask<<i)) eval++;
                 else eval--;
             }
             else
             {
-                if(Game.Color&(Game.BitMask<<i)) eval--;
+                if(Game.Color&(BitMask<<i)) eval--;
                 else eval++;
             }
         }
@@ -151,7 +145,6 @@ char FinalEval(struct Game Game)
  */
 char BotEval(struct Game Game)
 {
-    static const unsigned long int BitMask;
     static const int TabForce[]=
     {
          700,-30,30 ,10 ,10 ,30 ,-30,700,
@@ -172,11 +165,11 @@ char BotEval(struct Game Game)
     int AdvForce=0;
     for(char i=0;i<64;i++)
     {
-        if(Game.Disks&(Game.BitMask<<i))
+        if(Game.Disks&(BitMask<<i))
         {
             if(Game.Coords&128)
             {
-                if(Game.Color&(Game.BitMask<<i))
+                if(Game.Color&(BitMask<<i))
                 {
                     YouForce+=TabForce[i+0];
                     YouNumber++;
@@ -191,7 +184,7 @@ char BotEval(struct Game Game)
             }
             else
             {
-                if(Game.Color&(Game.BitMask<<i))
+                if(Game.Color&(BitMask<<i))
                 {
                     AdvForce+=TabForce[i+0];
                     AdvNumber++;
@@ -329,9 +322,9 @@ void Score(struct Game Game)
     char Disk1=0,Disk2=0,Empty=0;
     for(char i=0;i<64;i++)
     {
-        if(Game.Disks&(Game.BitMask<<i))
+        if(Game.Disks&(BitMask<<i))
         {
-            if(Game.Color&(Game.BitMask<<i)) Disk1++;
+            if(Game.Color&(BitMask<<i)) Disk1++;
             else Disk2++;
         }
         else Empty++;
@@ -349,14 +342,14 @@ int main()
     {
         printf("Starting Game n°%i\n",i+1);
         struct Game Game={0,0,1,128};
-        Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
-        Game.Color=Game.Color&~(Game.BitMask<<(3*8+3));
-        Game.Disks=Game.Disks| (Game.BitMask<<(3*8+4));
-        Game.Color=Game.Color| (Game.BitMask<<(3*8+4));
-        Game.Disks=Game.Disks| (Game.BitMask<<(4*8+3));
-        Game.Color=Game.Color| (Game.BitMask<<(4*8+3));
-        Game.Disks=Game.Disks| (Game.BitMask<<(4*8+4));
-        Game.Color=Game.Color&~(Game.BitMask<<(4*8+4));
+        Game.Disks=Game.Disks| (BitMask<<(3*8+3));
+        Game.Color=Game.Color&~(BitMask<<(3*8+3));
+        Game.Disks=Game.Disks| (BitMask<<(3*8+4));
+        Game.Color=Game.Color| (BitMask<<(3*8+4));
+        Game.Disks=Game.Disks| (BitMask<<(4*8+3));
+        Game.Color=Game.Color| (BitMask<<(4*8+3));
+        Game.Disks=Game.Disks| (BitMask<<(4*8+4));
+        Game.Color=Game.Color&~(BitMask<<(4*8+4));
         srand(time(NULL));
 
         // Old server config: {IP: "192.168.130.9" - PT: 8010 - ID: 5 - PW: "KZB46g"}
@@ -410,7 +403,7 @@ int main()
         if(Server_Game->state==3) Wins++;
         Score(Game); //Afficher score
         freeGameOthello(Server_Game);
-        printf("Parties: %i, Victoires: %i\n", i+1, Wins);
+        printf("Parties: %i, Victoires: %i, Defaites: %i\n", i+1, Wins, i+1-Wins);
         sleep(3);
     }
     return 0;
