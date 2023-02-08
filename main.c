@@ -374,7 +374,7 @@ int main()
                     printf("Game status %d: \t", Server_Game->state);
                     if (Server_Game->state == PLAYING)
                     {
-                        printf("Received move from server %d (x=%d,y=%d)\n",Server_Game->move,Server_Game->move%8,Server_Game->move/8); 
+                        printf("Received move from server %d (x=%d,y=%d)\n",Server_Game->move,Server_Game->move%8,Server_Game->move/8);
                         int move = Server_Game->move;
                         if (move != 64)
                         {
