@@ -1,36 +1,40 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
 #include "userNetwork.h"
 
+// Configuration pour la connexion
 #define IPADDRESS "127.0.0.1"
 #define PORT 8080
 #define USERID 5
 #define PASSWORD "binome5"
+#define BitMaskass 0x0000000000000001
 
+//Variables de jeu
 #define Infinity 120
 #define EvalWin 110
 #define MaxDepth 7
 
+const unsigned long int BitMask=1;
+
 struct Game
 {
-    unsigned long int Disks;        //Pions sur le plateau
-    unsigned long int Color;        //Couleur sur le plateau
-    unsigned long int BitMask;      //Sert à faire des opérations bit à bit
-    char Coords;                    //Stocke le joueur actif, les erreurs, et des coordonnées
+    unsigned long int Disks;            //Pions présents sur le plateau
+    unsigned long int Color;            //Couleur des pions présents
+    const unsigned long int BitMask;    //Sert à faire des opérations bit à bit
+    char Coords;                        //Stocke le joueur actif, les erreurs, et des coordonnées
 };
 
 /**
  * @brief Affiche le plateau dans le terminal
- * 
  * @param Game
  */
 void PrintBoard(struct Game Game)
 {
+    const unsigned long int BitMask;
     printf("\n   # A B C D E F G H #\n");
     for(char y=0;y<8;y++)
     {
@@ -47,10 +51,9 @@ void PrintBoard(struct Game Game)
 
 /**
  * @brief Joue un coup sur le plateau
- * 
  * @param Game
  * @param dx
- * @return char
+ * @return 0 si il y a quelque chose à retourner, 1 sinon
  */
 char FlipMove(struct Game *Game, char dx)
 {
@@ -89,12 +92,12 @@ char FlipMove(struct Game *Game, char dx)
 
 /**
  * @brief Permet de jouer un coup
- * 
  * @param Game
- * @return char
+ * @return 0 si le coup est légal, 1 sinon
  */
 char ExeMove(struct Game *Game)
 {
+    const unsigned long int BitMask;
     if(Game->Disks&(Game->BitMask<<(Game->Coords&127))) return 1;
     char MoveLegal=1;
     if(!FlipMove(Game,-7)) MoveLegal=0; // Going NE
@@ -114,13 +117,13 @@ char ExeMove(struct Game *Game)
 }
 
 /**
- * @brief Permet d'évaluer une position quand la partie est terminée
- * 
+ * @brief Permet d'évaluer une position (plus rapidement) quand la partie est terminée
  * @param Game
- * @return char
+ * @return Différence entre le nombre de pions du joueur actuel et celui de l'adversaire
  */
 char FinalEval(struct Game Game)
 {
+    const unsigned long int BitMask;
     char eval=0;
     for(char i=0;i<64;i++)
     {
@@ -143,13 +146,12 @@ char FinalEval(struct Game Game)
 
 /**
  * @brief Fonction d'évaluation du plateau
- * 
  * @param Game
- * @return char
+ * @return Score du plateau à un moment donné (entre -100 et 100)
  */
 char BotEval(struct Game Game)
 {
-    char eval=0;
+    static const unsigned long int BitMask;
     static const int TabForce[]=
     {
          700,-30,30 ,10 ,10 ,30 ,-30,700,
@@ -161,6 +163,7 @@ char BotEval(struct Game Game)
          -30,-40, 0 , 0 , 0 , 0 ,-40,-30,
          700,-30,30 ,10 ,10 ,30 ,-30,700
     };
+    char eval=0;
     int YouCorners=0;
     int AdvCorners=0;
     int YouNumber=0;
@@ -218,12 +221,11 @@ char BotEval(struct Game Game)
 
 /**
  * @brief Calcule les branches de l'arbre pour déterminer l'évaluation du joueur actuel
- * 
  * @param Game
  * @param depth
  * @param TopEval
  * @param CutEval
- * @return char
+ * @return ??
  */
 char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
 {
@@ -237,8 +239,6 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
         if(!ExeMove(&Game)) //on teste si le coup est possible
         {
             NewEval=GrowTree(Game,depth-1,-CutEval,-TopEval);
-            assert(NewEval!=Infinity);
-            assert(NewEval!=-Infinity);
             if(CutEval<=NewEval) return -NewEval; //On coupe la branche actuelle
             if(TopEval<NewEval) TopEval=NewEval; //On vient de couper une branche
             if(MaxEval<NewEval) MaxEval=NewEval; //On a trouvé un meilleur coup, mais pas de coupe supplémentaire
@@ -252,8 +252,6 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
         if(!ExeMove(&Game)) //cette fois on regarde les coups du joueur actuel
         {
             NewEval=GrowTree(Game,depth-1,TopEval,CutEval);
-            assert(NewEval!=Infinity);
-            assert(NewEval!=-Infinity);
             if(TopEval<NewEval) TopEval=NewEval;
             if(MaxEval<NewEval) MaxEval=NewEval;
             Game.Disks=SaveDisks;
@@ -268,10 +266,9 @@ char GrowTree(struct Game Game, char depth, char TopEval, char CutEval)
 }
 
 /**
- * @brief Algo qui détermine le coup à jouer et le joue
- * 
+ * @brief Détermine le coup à jouer et le joue
  * @param Game 
- * @return char 
+ * @return ??
  */
 char BotMove(struct Game *Game)
 {
@@ -286,8 +283,6 @@ char BotMove(struct Game *Game)
         if(!ExeMove(Game))
         {
             NewEval=GrowTree(*Game,MaxDepth,-Infinity,Infinity);
-            assert(NewEval!=Infinity);
-            assert(NewEval!=-Infinity);
             if(MaxEval<NewEval||((MaxEval==NewEval)&&(0b11!=(0b11&rand()))))
             {
                 MaxEval=NewEval;
@@ -310,9 +305,9 @@ char BotMove(struct Game *Game)
 
 /**
  * @brief Fonction qui détermine si la partie est terminée (personne ne peut jouer)
- * 
+ * Cette fonction n'est plus utilisée dans les dernières versions du programme
  * @param Game 
- * @return char 
+ * @return ??
  */
 char GameOver(struct Game Game)
 {
@@ -353,8 +348,7 @@ int main()
     for(int i=0;i<100;i++)
     {
         printf("Starting Game n°%i\n",i+1);
-        struct Game Game={0,0,0,128};
-        Game.BitMask=1;
+        struct Game Game={0,0,1,128};
         Game.Disks=Game.Disks| (Game.BitMask<<(3*8+3));
         Game.Color=Game.Color&~(Game.BitMask<<(3*8+3));
         Game.Disks=Game.Disks| (Game.BitMask<<(3*8+4));
