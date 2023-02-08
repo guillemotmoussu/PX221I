@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 #include "userNetwork.h"
 
 // Configuration pour la connexion
@@ -341,7 +340,7 @@ int main()
     for(int i=0;i<100;i++)
     {
         printf("Starting Game n°%i\n",i+1);
-        struct Game Game={0,0,1,128};
+        struct Game Game={0,0,128};
         Game.Disks=Game.Disks| (BitMask<<(3*8+3));
         Game.Color=Game.Color&~(BitMask<<(3*8+3));
         Game.Disks=Game.Disks| (BitMask<<(3*8+4));
@@ -404,7 +403,6 @@ int main()
         Score(Game); //Afficher score
         freeGameOthello(Server_Game);
         printf("Parties: %i, Victoires: %i, Defaites: %i\n", i+1, Wins, i+1-Wins);
-        sleep(3);
     }
     return 0;
 }
